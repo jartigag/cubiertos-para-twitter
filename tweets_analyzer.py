@@ -54,7 +54,9 @@ end_date = 0
 detected_hashtags = collections.Counter()
 detected_domains = collections.Counter()
 retweets = 0
+likes = 0
 retweeted_users = collections.Counter()
+liked_users = collections.Counter()
 mentioned_users = collections.Counter()
 id_screen_names = {}
 
@@ -63,7 +65,6 @@ def process_tweet(tweet):
     global start_date
     global end_date
     global retweets
-    global likes
 
     tw_date = tweet.created_at
 
@@ -81,19 +82,6 @@ def process_tweet(tweet):
             id_screen_names[rt_id_user] = "@%s" % tweet.retweeted_status.user.screen_name
 
         retweets += 1
-    except:
-        pass
-
-    #TODO: Handling likes
-    try:
-        # We use id to get unique accounts (screen_name can be changed)
-        like_id_user = tweet.retweeted_status.user.id_str
-        retweeted_users[rt_id_user] += 1
-
-        if tweet.retweeted_status.user.screen_name not in id_screen_names:
-            id_screen_names[rt_id_user] = "@%s" % tweet.retweeted_status.user.screen_name
-
-        likes += 1
     except:
         pass
 
@@ -117,11 +105,41 @@ def process_tweet(tweet):
             if not ht['screen_name'] in id_screen_names:
                 id_screen_names[ht['id_str']] = "@%s" % ht['screen_name']
 
+def process_like(like):
+    """ Processing a single Tweet and updating our datasets """
+    #global start_date
+    #global end_date
+    global likes
+
+    #tw_date = tweet.created_at
+
+    # Updating most recent tweet
+    #end_date = end_date or tw_date
+    #start_date = tw_date
+
+    try:
+        # We use id to get unique accounts (screen_name can be changed)
+        like_id_user = like.user.id_str
+        liked_users[like_id_user] += 1
+
+        if like.user.screen_name not in id_screen_names:
+            id_screen_names[like_id_user] = "@%s" % like.user.screen_name
+
+        likes += 1
+    except:
+        pass
+
 def get_tweets(api, username, limit):
     """ Download Tweets from username account """
     for status in tqdm(tweepy.Cursor(api.user_timeline, screen_name=username).items(limit),
                        unit="tw", total=limit):
         process_tweet(status)
+
+def get_likes(api, username, limit):
+    """ Download Likes from username account """
+    for status in tqdm(tweepy.Cursor(api.favorites, screen_name=username).items(limit),
+                       unit="lk", total=limit):
+        process_like(status)
 
 def print_stats(dataset, top=5):
     """ Displays top values by order """
@@ -162,22 +180,23 @@ def main():
     print("___ retrieving last %d tweets..." % num_tweets)
     # Download tweets
     get_tweets(twitter_api, args.name, limit=num_tweets)
-
-    likes = 0 #TODO: (87)
+    # Will retreive all Likes from account (or max limit)
+    num_likes = numpy.amin([args.limit, user_info.favourites_count])
+    print("___ retrieving last %d likes..." % num_likes)
+    # Download likes
+    get_likes(twitter_api, args.name, limit=num_likes)
 
     print("[+] %d tweets in:  \033[1m%d\033[0m days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
     print("                     \033[1m%.2f\033[0m %% RTs" % (float(retweets) * 100 / num_tweets))
-    print("                     \033[1m%.2f\033[0m %% likes" % (float(likes) * 100 / num_tweets))
+    #print("                     \033[1m%.2f\033[0m %% likes" % (float(likes) * 100 / (num_tweets+num_likes))) #this metric need to be redesigned..
 
     # Checking if we have enough data (considering it's good to have at least 30 days of data)
     if (end_date - start_date).days < 30 and (num_tweets < user_info.statuses_count):
          print("[\033[91m!\033[0m] Looks like we do not have enough tweets from user, you should consider retrying (--limit)")
 
-    num_likes = 0 #TODO: (87)
-
     if (end_date - start_date).days != 0:
-        print("[+] on average:      \033[1m%.1f\033[0m tweets/day" % (num_tweets / float((end_date - start_date).days)))
-        print("[+]                  \033[1m%.1f\033[0m  likes/day" % (num_likes / float((end_date - start_date).days)))
+        print("[+] on average:      \033[1m%.2f\033[0m tweets/day" % (num_tweets / float((end_date - start_date).days)))
+        print("[+]                  \033[1m%.2f\033[0m  likes/day" % (likes / float((end_date - start_date).days)))
 
     print("[+] Top 10 hashtags")
     print_stats(detected_hashtags, top=10)
@@ -187,17 +206,25 @@ def main():
     for k in retweeted_users.keys():
         retweeted_users_names[id_screen_names[k]] = retweeted_users[k]
 
-    print("[+] Top 5 most retweeted users")
+    liked_users_names = {}
+    for k in liked_users.keys():
+        liked_users_names[id_screen_names[k]] = liked_users[k]
+
+
+    print("[+] top 5 most retweeted users")
     print_stats(retweeted_users_names, top=5)
+
+    print("[+] top 5 most liked users")
+    print_stats(liked_users_names, top=5)
 
     mentioned_users_names = {}
     for k in mentioned_users.keys():
         mentioned_users_names[id_screen_names[k]] = mentioned_users[k]
-    print("[+] Top 5 most mentioned users")
+    print("[+] top 5 most mentioned users")
     print_stats(mentioned_users_names, top=5)
 
-    print("[+] Most referenced domains (from URLs)")
-    print_stats(detected_domains, top=6)
+    print("[+] top 5 most linked domains (from URLs)")
+    print_stats(detected_domains, top=5)
 
 if __name__ == '__main__':
     try:
