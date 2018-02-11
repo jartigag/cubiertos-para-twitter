@@ -42,12 +42,14 @@ from secrets2 import consumer_key, consumer_secret, access_token, access_token_s
 parser = argparse.ArgumentParser(description=
     "analyze twitter profiles, version %s" % __version__,
                                  usage='%(prog)s -n <screen_name> [options]')
-parser.add_argument('-t', '--tweets', metavar='N', type=int, default=500,
-                    help='limit the number of tweets to retreive (default=500)')
 parser.add_argument('name', metavar="screen_name",
                     help='target screen_name')
+parser.add_argument('-g', '--group', metavar='N',
+                    help='add the user to a group')
 parser.add_argument('-l', '--likes', metavar='N', type=int, default=500,
                     help='limit the number of likes to retreive (default=500)')
+parser.add_argument('-t', '--tweets', metavar='N', type=int, default=500,
+                    help='limit the number of tweets to retreive (default=500)')
 
 args = parser.parse_args()
 
@@ -211,7 +213,7 @@ def main():
     if (end_date - start_date).days != 0:
         print("[+] on average:      \033[1m%.2f\033[0m tweets/day" % (num_tweets / float((end_date - start_date).days)))
         logger.warning("[+] on average:      %.2f tweets/day" % (num_tweets / float((end_date - start_date).days)))
-        print("                     \033[1m%.2f\033[0m  likes/day" % (likes / float((end_date - start_date).days)))
+        print("                     \033[1m%.2f\033[0m likes/day" % (likes / float((end_date - start_date).days)))
         logger.warning("                     %.2f  likes/day" % (likes / float((end_date - start_date).days)))
 
     print("[+] Top 10 hashtags")
@@ -252,11 +254,17 @@ if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.WARNING)
     file_dir = os.path.join(os.path.expanduser("~"), "analizados")
-    logFile = logging.FileHandler(os.path.join(file_dir, args.name + ".txt"))
+    if args.group:
+        group_dir = os.path.join(file_dir, args.group)
+        print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
+        logFile = logging.FileHandler(os.path.join(group_dir, args.name + ".txt"))
+    else:
+        logFile = logging.FileHandler(os.path.join(file_dir, args.name + ".txt"))
     logFile.setLevel(logging.WARNING)
     logger.addHandler(logFile)
 
     try:
+        #TODO: pick users from list, analyze and send inform via dm
         main()
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)
