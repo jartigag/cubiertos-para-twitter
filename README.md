@@ -1,4 +1,4 @@
-# 🍴 cubertería para twitter
+# 🍴 cubiertos para twitter
 
 con [tweet_analyzer de x0rz](https://github.com/x0rz/tweets_analyzer) como punto de partida, estoy diseñando mi propia cubertería para automatizar acciones rutinarias en twitter:
 
