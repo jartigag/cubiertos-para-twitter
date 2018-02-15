@@ -1,6 +1,6 @@
 # 🍴 cubiertos para twitter
 
-con [tweet_analyzer (x0rz)](https://github.com/x0rz/tweets_analyzer) como punto de partida, estoy diseñando mi propia cubertería para automatizar acciones rutinarias en twitter:
+con [tweet_analyzer (x0rz)](https://github.com/x0rz/tweets_analyzer) como base, estoy diseñando mi propia cubertería para automatizar acciones rutinarias en twitter:
 
 ### **tenedor**
 > “comer bocado a bocado”
@@ -15,4 +15,4 @@ de un @username, extrae métricas generales, ratios y tops, *para después envia
 ### **cucharón**
 > “servir de la olla al plato”
 
-*(#wip) cada x minutos, agrega a lista privada si fuentes{keywords,followersoffollowers} cumplen parámetros*
+*(#wip) cada x minutos, agrega a lista privada si @username de fuentes{keywords,followersoffollowers} cumplen parámetros*
