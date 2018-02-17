@@ -14,7 +14,7 @@
 # based on tweets_analyzer by @x0rz
 # 
 # Usage:
-# python tweets_analyzer.py -n screen_name
+# python tenedor.py -n screen_name
 #
 # Install:
 # pip install tweepy tqdm numpy
@@ -37,10 +37,10 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets import consumer_key, consumer_secret, access_token, access_token_secret
 
 parser = argparse.ArgumentParser(description=
-    "analyze twitter profiles, version %s" % __version__,
+    "\"eat one mouthful at a time\" tool for twitter, version %s" % __version__,
                                  usage='%(prog)s -n <screen_name> [options]')
 parser.add_argument('name', metavar="screen_name",
                     help='target screen_name')
