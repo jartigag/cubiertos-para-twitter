@@ -14,7 +14,7 @@
 # based on tweets_analyzer by @x0rz
 # 
 # Usage:
-# python tenedor.py -n screen_name
+# python tenedor.py screen_name
 #
 # Install:
 # pip install tweepy tqdm numpy
@@ -41,7 +41,7 @@ from secrets import consumer_key, consumer_secret, access_token, access_token_se
 
 parser = argparse.ArgumentParser(description=
     "\"eat one mouthful at a time\" tool for twitter, version %s" % __version__,
-                                 usage='%(prog)s -n <screen_name> [options]')
+                                 usage='%(prog)s <screen_name> [options]')
 parser.add_argument('name', metavar="screen_name",
                     help='target screen_name')
 parser.add_argument('-g', '--group', metavar='N',
