@@ -19,8 +19,6 @@
 # Install:
 # pip install tweepy tqdm numpy
 
-from __future__ import unicode_literals
-
 from tqdm import tqdm
 import tweepy
 import numpy
@@ -60,7 +58,6 @@ end_date = 0
 detected_hashtags = collections.Counter()
 detected_domains = collections.Counter()
 retweets = 0
-likes = 0
 retweeted_users = collections.Counter()
 liked_users = collections.Counter()
 mentioned_users = collections.Counter()
@@ -112,16 +109,7 @@ def process_tweet(tweet):
                 id_screen_names[ht['id_str']] = "@%s" % ht['screen_name']
 
 def process_like(like):
-    """ Processing a single Tweet and updating our datasets """
-    #global start_date
-    #global end_date
-    global likes
-
-    #tw_date = tweet.created_at
-
-    # Updating most recent tweet
-    #end_date = end_date or tw_date
-    #start_date = tw_date
+    """ Processing a single Like and updating our datasets """
 
     try:
         # We use id to get unique accounts (screen_name can be changed)
@@ -130,8 +118,6 @@ def process_like(like):
 
         if like.user.screen_name not in id_screen_names:
             id_screen_names[like_id_user] = "@%s" % like.user.screen_name
-
-        likes += 1
     except:
         pass
 
@@ -175,7 +161,10 @@ def main():
     auth.set_access_token(access_token, access_token_secret)
     twitter_api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
-    # Getting general account's metadata
+    # user_info.statuses_count
+    #           favourites_count
+    #           followers_count
+    #           friends_count
     print("___ getting @\033[1m%s\033[0m's data..." % args.name)
     logger.warning("___ getting %s's data..." % args.name)
     user_info = twitter_api.get_user(screen_name=args.name)
@@ -197,13 +186,10 @@ def main():
     num_likes = numpy.amin([args.likes, user_info.favourites_count])
     print("___ retrieving last %d likes..." % num_likes)
     # Download likes
-    get_likes(twitter_api, args.name, limit=num_likes) # WARNING! rate limit easily exceeded
+    get_likes(twitter_api, args.name, limit=num_likes)
 
-    print("[+] %d tweets in:   \033[1m%d\033[0m days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
-    logger.warning("[+] %d tweets in:   %d days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
-    print("                     \033[1m%.2f\033[0m %% RTs" % (float(retweets) * 100 / num_tweets))
-    logger.warning("                     %.2f %% RTs" % (float(retweets) * 100 / num_tweets))
-    #print("                     \033[1m%.2f\033[0m %% likes" % (float(likes) * 100 / (num_tweets+num_likes))) #this metric need to be redesigned..
+    print("[+] %d tweets in   : \033[1m%d\033[0m days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
+    logger.warning("[+] %d tweets in   : %d days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
 
     # Checking if we have enough data (considering it's good to have at least 30 days of data)
     if (end_date - start_date).days < 30 and (num_tweets < user_info.statuses_count):
@@ -211,10 +197,8 @@ def main():
          logger.warning("[!] not enough tweets from user, consider retrying (--limit)")
 
     if (end_date - start_date).days != 0:
-        print("[+] on average:      \033[1m%.2f\033[0m tweets/day" % (num_tweets / float((end_date - start_date).days)))
-        logger.warning("[+] on average:      %.2f tweets/day" % (num_tweets / float((end_date - start_date).days)))
-        print("                     \033[1m%.2f\033[0m likes/day" % (likes / float((end_date - start_date).days)))
-        logger.warning("                     %.2f  likes/day" % (likes / float((end_date - start_date).days)))
+        print("[+] on average     : \033[1m%.2f\033[0m tweets/day, \033[1m%.2f\033[0m %% RTs" % (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
+        logger.warning("[+] on average     : %.2f tweets/day, %.2f %% RTs" % (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
 
     print("[+] Top 10 hashtags")
     logger.warning("[+] Top 10 hashtags")
