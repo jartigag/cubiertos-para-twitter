@@ -17,10 +17,14 @@
 # Install:
 # pip3 install tweepy
 
+#TODO: logging
+#TODO: spinner while long processes
+
+import argparse
 import tweepy
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 __version__ = '0.1'
 
@@ -33,20 +37,20 @@ WHITELIST_FILE = os.path.join(CONFIG_APP_DIR, "whitelist.json")
 
 me = ""
 last_date = 0
-last_time_checked = datetime(2018, 2, 20, 1, 00, 00) #TODO: store last_time_checked
+last_time_checked = datetime(2018, 2, 19, 12, 30, 00) #TODO(119): last_time_checked = followed_date
 
-def has_tweeted(api, id):
+def last_date_tweeted(api, id):
     global last_date
-    if len(api.user_timeline(id=id, count=1))>=1:
-        status = api.user_timeline(id=id, count=1)[0] #is it faster with Cursor(..).items()?
-        last_date = status.created_at
-    return (last_date > last_time_checked)
+    tweet = api.user_timeline(id = id, count = 1)[0]
+    if tweet:
+        last_date = tweet.created_at
+    return last_date
 
-def has_liked(api, id):
+def last_date_liked(api, id):
     global last_date
     status = api.favorites(id=id, count=1)[0] #is it faster with Cursor(..).items()?
     #TODO: get last like date. store number of likes, compare with actual number of likes
-    return (last_date > last_time_checked)
+    return last_date
 
 def main():
     """ To run with python cuchillo.py """
@@ -55,25 +59,25 @@ def main():
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
 
     me = api.me().screen_name
-    print("@"+me)
+    print("___ getting @\033[1m%s\033[0m's data..." % me)
 
     following = []
     n = 0
     for page in tweepy.Cursor(api.friends_ids, screen_name=me).pages():
         following.extend(page)
-    #    if n==1:            print("-- you follow +5k. retreiving them in pages..")
-    #    if n>0:             print("-- [+] page " + str(n))
-    #    if len(page)==5000: n += 1
-    #print(str(len(following)) + " following")
+        if n==1:            print("-- you follow +5k. retreiving them in pages..")
+        if n>0:             print("-- [+] page " + str(n))
+        if len(page)==5000: n += 1
+    print("    " + str(len(following)) + " following")
 
     followers = []
     m = 0
     for page in tweepy.Cursor(api.followers_ids, screen_name=me).pages():
         followers.extend(page)
-    #    if m==1:            print("-- you follow +5k followers. retreiving them in pages..")
-    #    if m>0:             print("-- [+] page " + str(m))
-    #    if len(page)==5000: m += 1
-    #print(str(len(followers)) + " followers")
+        if m==1:            print("-- you follow +5k followers. retreiving them in pages..")
+        if m>0:             print("-- [+] page " + str(m))
+        if len(page)==5000: m += 1
+    print("    " + str(len(followers)) + " followers")
 
     # WHITELIST filter
     afterWL = []
@@ -87,23 +91,52 @@ def main():
     afterFB = list(set(afterWL) - set(followers))
     #print(str(len(afterFB)) + " in afterFB")
 
-    print("checking if " + str(len(afterFB)) + " non-reciprocal users have been active..")
-
     # ACTIVITY filter:
     afterA = []
-    for f in afterFB:
-        if has_tweeted(api, f): afterA.append(f)
-        #if has_liked(api, f):
+    inactives = []
+    unfollowed = []
+
+    if args.clean:
+        if len(afterFB)==1: print("checking " + str(len(afterFB)) + " non-reciprocal user inactivity for " + str(args.clean) + " days..")
+        if len(afterFB)>1:  print("checking " + str(len(afterFB)) + " non-reciprocal users inactivity for " + str(args.clean) + " days..")
+        for f in afterFB:
+            if last_date_tweeted(api, f)+timedelta(days=args.clean) < datetime.today():
+                print(" - @\033[1m%s\033[0m has not been active" % api.get_user(f).screen_name)
+                inactives.append(f)
+        print(str(len(inactives)) + " has not been active for " + str(args.clean) + " days")
+        if not len(inactives)==0:
+            if len(inactives)==1: unfollow_msg = ("\033[1m unfollow %i user?\033[0m (y/n) " % len(inactives))
+            if len(inactives)>1: unfollow_msg = ("\033[1m unfollow %i users?\033[0m (y/n) " % len(inactives))
+            if input(unfollow_msg) == "y":
+                for f in inactives:
+                    api.destroy_friendship(f)
+                    unfollowed.append(f)
+    else:
+        if len(afterFB)==1: print("checking " + str(len(afterFB)) + " non-reciprocal user activity..")
+        if len(afterFB)>1:  print("checking " + str(len(afterFB)) + " non-reciprocal users activity..")
+
+        for f in afterFB:
+            if last_date_tweeted(api, f) > last_time_checked: #TODO: last_time_checked = followed_date
+                afterA.append(f)
+                if input(" - @\033[1m%s\033[0m has been active. unfollow? (y/n) " % api.get_user(f).screen_name) == "y":
+                    api.destroy_friendship(f)
+                    unfollowed.append(f)
+            #elif has_liked(api, f):
+        print(str(len(afterA)) + " has been active since last time checked")
+
     #print(str(len(afterA)) + " in afterA")
-
-    print(str(len(afterA)) + " has been active since last time checked:")
-
-    for f in afterA:
-        print(" - " + api.get_user(f).screen_name)
-    #TODO: unfollow this users?
-    print("unfollow this users?")
+    print(str(len(unfollowed)) + " has been unfollowed")
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description=
+        ">>\"separate meat from bone\" tool for twitter, version %s by @jartigag" % __version__,
+                                     usage='%(prog)s [options]')
+    parser.add_argument('-c', '--clean', type=int, metavar='N_DAYS',
+                        help='unfollow inactive ones for > N_DAYS')
+
+    args = parser.parse_args()
+
     try:
         main()
     except tweepy.error.TweepError as e:

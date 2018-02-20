@@ -139,22 +139,26 @@ def print_stats(dataset, top=5):
     print("")
 
 def basics(api, username):
+    """ Get basic info from username account
+        returns: number of tweets, tweets/likes ratio, number of followers, followers/following ratio """
     user_info = api.get_user(screen_name=username)
 
     return (user_info.statuses_count, float(user_info.statuses_count/user_info.favourites_count),
         user_info.followers_count, float(user_info.followers_count/user_info.friends_count))
 
 def over_time(api, username, tweets_limit=500, likes_limit=500):
-    """ Download Tweets from username account """
+    """ Get how username tweets over time
+        returns: days beetween first and last tweet (considering limit of tweets), start date, end date,
+        number of tweets, tweets/day on average, %RTs """
+    # get_tweets without tqdm without progress bar
     for status in tweepy.Cursor(api.user_timeline, screen_name=username).items(tweets_limit):
         process_tweet(status)
 
-    num_tweets = numpy.amin([tweets_limit, api.get_user(screen_name=username).statuses_count])
-
-    """ Download Likes from username account """
+    # get_likes without tqdm without progress bar
     for status in tweepy.Cursor(api.favorites, screen_name=username).items(likes_limit):
         process_like(status)
 
+    num_tweets = numpy.amin([tweets_limit, api.get_user(screen_name=username).statuses_count])
     tweets_day_avg = 0.00
     retweets_percent = 0.00
 
@@ -249,15 +253,15 @@ def main():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=
-        "\"eat one mouthful at a time\" tool for twitter, version %s" % __version__,
+        ">>\"eat one mouthful at a time\" tool for twitter, version %s by @jartigag" % __version__,
                                      usage='%(prog)s <screen_name> [options]')
     parser.add_argument('name', metavar="screen_name",
                         help='target screen_name')
-    parser.add_argument('-g', '--group', metavar='N',
+    parser.add_argument('-g', '--group',
                         help='add the user to a group')
-    parser.add_argument('-l', '--likes', metavar='N', type=int, default=500,
+    parser.add_argument('-l', '--likes', type=int, default=500,
                         help='limit the number of likes to retreive (default=500)')
-    parser.add_argument('-t', '--tweets', metavar='N', type=int, default=500,
+    parser.add_argument('-t', '--tweets', type=int, default=500,
                         help='limit the number of tweets to retreive (default=500)')
 
     args = parser.parse_args()
