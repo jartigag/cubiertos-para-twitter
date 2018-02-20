@@ -24,7 +24,7 @@ from datetime import datetime
 
 __version__ = '0.1'
 
-from secrets import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
 
 APP = "cuchillo"
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")
@@ -33,7 +33,7 @@ WHITELIST_FILE = os.path.join(CONFIG_APP_DIR, "whitelist.json")
 
 me = ""
 last_date = 0
-last_time_checked = datetime(2018, 2, 18, 16, 00, 00) #TODO: store last_time_checked
+last_time_checked = datetime(2018, 2, 20, 1, 00, 00) #TODO: store last_time_checked
 
 def has_tweeted(api, id):
     global last_date
@@ -49,6 +49,7 @@ def has_liked(api, id):
     return (last_date > last_time_checked)
 
 def main():
+    """ To run with python cuchillo.py """
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 

@@ -35,21 +35,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets import consumer_key, consumer_secret, access_token, access_token_secret
-
-parser = argparse.ArgumentParser(description=
-    "\"eat one mouthful at a time\" tool for twitter, version %s" % __version__,
-                                 usage='%(prog)s <screen_name> [options]')
-parser.add_argument('name', metavar="screen_name",
-                    help='target screen_name')
-parser.add_argument('-g', '--group', metavar='N',
-                    help='add the user to a group')
-parser.add_argument('-l', '--likes', metavar='N', type=int, default=500,
-                    help='limit the number of likes to retreive (default=500)')
-parser.add_argument('-t', '--tweets', metavar='N', type=int, default=500,
-                    help='limit the number of tweets to retreive (default=500)')
-
-args = parser.parse_args()
+from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -141,14 +127,10 @@ def print_stats(dataset, top=5):
         sorted_keys = sorted(dataset, key=dataset.get, reverse=True)
         max_len_key = max([len(x) for x in sorted_keys][:top])  # use to adjust column width
         for k in sorted_keys:
-            try:
-                print(("- \033[1m{:<%d}\033[0m {:>6} {:<4}" % max_len_key)
-                      .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / sum) * 100)))
-                logger.warning(("- {:<%d} {:>6} {:<4}" % max_len_key)
-                      .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / sum) * 100)))
-            except:
-                import ipdb
-                ipdb.set_trace()
+            print(("- \033[1m{:<%d}\033[0m {:>6} {:<4}" % max_len_key)
+                  .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / sum) * 100)))
+            logger.warning(("- {:<%d} {:>6} {:<4}" % max_len_key)
+                  .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / sum) * 100)))
             i += 1
             if i >= top:
                 break
@@ -156,49 +138,80 @@ def print_stats(dataset, top=5):
         print("no data")
     print("")
 
+def basics(api, username):
+    user_info = api.get_user(screen_name=username)
+
+    return (user_info.statuses_count, float(user_info.statuses_count/user_info.favourites_count),
+        user_info.followers_count, float(user_info.followers_count/user_info.friends_count))
+
+def over_time(api, username, tweets_limit=500, likes_limit=500):
+    """ Download Tweets from username account """
+    for status in tweepy.Cursor(api.user_timeline, screen_name=username).items(tweets_limit):
+        process_tweet(status)
+
+    num_tweets = numpy.amin([tweets_limit, api.get_user(screen_name=username).statuses_count])
+
+    """ Download Likes from username account """
+    for status in tweepy.Cursor(api.favorites, screen_name=username).items(likes_limit):
+        process_like(status)
+
+    tweets_day_avg = 0.00
+    retweets_percent = 0.00
+
+    if (end_date - start_date).days != 0:
+        tweets_day_avg = (num_tweets / float((end_date - start_date).days))
+        retweets_percent = (float(retweets) * 100 / num_tweets)
+
+    return ((end_date - start_date).days, start_date, end_date,
+        num_tweets, tweets_day_avg, retweets_percent)
+
 def main():
+    """ To run with python tenedor.py screen_name """
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
-    twitter_api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
-    # user_info.statuses_count
-    #           favourites_count
-    #           followers_count
-    #           friends_count
     print("___ getting @\033[1m%s\033[0m's data..." % args.name)
     logger.warning("___ getting %s's data..." % args.name)
-    user_info = twitter_api.get_user(screen_name=args.name)
-    print("[+] tweets         : \033[1m%s\033[0m" % user_info.statuses_count)
-    logger.warning("[+] tweets         : %s" % user_info.statuses_count)
-    print("[+] tws/likes ratio: \033[1m%.2f\033[0m"% (float(user_info.statuses_count)/user_info.favourites_count))
-    logger.warning("[+] tws/likes ratio: %.2f"% (float(user_info.statuses_count)/user_info.favourites_count))
-    print("[+] followers      : \033[1m%s\033[0m" % user_info.followers_count)
-    logger.warning("[+] followers      : %s" % user_info.followers_count)
-    print("[+] fwrs/fwng ratio: \033[1m%.2f\033[0m"% (float(user_info.followers_count)/user_info.friends_count))
-    logger.warning("[+] fwrs/fwng ratio: %.2f"% (float(user_info.followers_count)/user_info.friends_count))
+
+    n_tweets, t_ratio, n_followers, f_ratio = basics(api, args.name)
+
+    print("[+] tweets         : \033[1m%s\033[0m" % n_tweets)
+    logger.warning("[+] tweets         : %s" % n_tweets)
+    print("[+] tws/likes ratio: \033[1m%.2f\033[0m"% t_ratio)
+    logger.warning("[+] tws/likes ratio: %.2f"% t_ratio)
+    print("[+] followers      : \033[1m%s\033[0m" % n_followers)
+    logger.warning("[+] followers      : %s" % n_followers)
+    print("[+] fwrs/fwng ratio: \033[1m%.2f\033[0m"% f_ratio)
+    logger.warning("[+] fwrs/fwng ratio: %.2f"% f_ratio)
 
     # Will retreive all Tweets from account (or max limit)
-    num_tweets = numpy.amin([args.tweets, user_info.statuses_count])
+    num_tweets = numpy.amin([args.tweets, n_tweets])
     print("___ retrieving last %d tweets..." % num_tweets)
     # Download tweets
-    get_tweets(twitter_api, args.name, limit=num_tweets)
+    get_tweets(api, args.name, limit=num_tweets)
     # Will retreive all Likes from account (or max limit)
-    num_likes = numpy.amin([args.likes, user_info.favourites_count])
+    num_likes = numpy.amin([args.likes, int(n_tweets/t_ratio)]) # t_ratio needed in other script, so
+                                                                # n_likes has to be calculated this way
     print("___ retrieving last %d likes..." % num_likes)
     # Download likes
-    get_likes(twitter_api, args.name, limit=num_likes)
+    get_likes(api, args.name, limit=num_likes)
 
-    print("[+] %d tweets in   : \033[1m%d\033[0m days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
-    logger.warning("[+] %d tweets in   : %d days (from %s to %s)" % (num_tweets, (end_date - start_date).days, start_date, end_date))
+    print("[+] %d tweets in  : \033[1m%d\033[0m days (from %s to %s)" %
+        (num_tweets, (end_date - start_date).days, start_date, end_date))
+    logger.warning("[+] %d tweets in  : %d days (from %s to %s)" %
+        (num_tweets, (end_date - start_date).days, start_date, end_date))
 
     # Checking if we have enough data (considering it's good to have at least 30 days of data)
-    if (end_date - start_date).days < 30 and (num_tweets < user_info.statuses_count):
+    if (end_date - start_date).days < 30 and (num_tweets < n_tweets):
          print("[\033[91m!\033[0m] not enough tweets from user, consider retrying (--limit)")
          logger.warning("[!] not enough tweets from user, consider retrying (--limit)")
 
     if (end_date - start_date).days != 0:
-        print("[+] on average     : \033[1m%.2f\033[0m tweets/day, \033[1m%.2f\033[0m %% RTs" % (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
-        logger.warning("[+] on average     : %.2f tweets/day, %.2f %% RTs" % (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
+        print("[+] on average     : \033[1m%.2f\033[0m tweets/day, \033[1m%.2f\033[0m %% RTs" %
+         (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
+        logger.warning("[+] on average     : %.2f tweets/day, %.2f %% RTs" %
+         (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
 
     print("[+] Top 10 hashtags")
     logger.warning("[+] Top 10 hashtags")
@@ -232,19 +245,35 @@ def main():
     print("[+] top 5 most linked domains (from URLs)")
     logger.warning("[+] top 5 most linked domains (from URLs)")
     print_stats(detected_domains, top=5)
-
-if __name__ == '__main__':
     
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description=
+        "\"eat one mouthful at a time\" tool for twitter, version %s" % __version__,
+                                     usage='%(prog)s <screen_name> [options]')
+    parser.add_argument('name', metavar="screen_name",
+                        help='target screen_name')
+    parser.add_argument('-g', '--group', metavar='N',
+                        help='add the user to a group')
+    parser.add_argument('-l', '--likes', metavar='N', type=int, default=500,
+                        help='limit the number of likes to retreive (default=500)')
+    parser.add_argument('-t', '--tweets', metavar='N', type=int, default=500,
+                        help='limit the number of tweets to retreive (default=500)')
+
+    args = parser.parse_args()
+
     logger = logging.getLogger()
     logger.setLevel(logging.WARNING)
     file_dir = os.path.join(os.path.expanduser("~"), "analizados")
+
     if args.group:
         group_dir = os.path.join(file_dir, args.group)
         print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
         logFile = logging.FileHandler(os.path.join(group_dir, args.name + ".txt"))
     else:
         logFile = logging.FileHandler(os.path.join(file_dir, args.name + ".txt"))
-    logFile.setLevel(logging.WARNING)
+
+    logFile.setLevel(logging.WARNING) #TODO: INFO level?
     logger.addHandler(logFile)
 
     try:
