@@ -13,7 +13,7 @@ de un @username, extrae métricas generales, ratios y tops, *para después envia
 
 *(#wip) cada x días, unfollow @username si no está en whitelist, no followback y ha estado activo (tweet o fav)*
 
-### **cucharón**
+### **cazo**
 > “servir de la olla al plato”
 
 *(#wip) cada x minutos, agrega @username de fuentes{keywords,followersoffollowers} a lista privada si cumple parámetros*
