@@ -35,10 +35,6 @@ CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")
 CONFIG_APP_DIR = os.path.join(CONFIG_DIR, APP)
 WHITELIST_FILE = os.path.join(CONFIG_APP_DIR, "whitelist.json")
 
-me = ""
-last_date = 0
-last_time_checked = datetime(2018, 2, 19, 12, 30, 00) #TODO(119): last_time_checked = followed_date
-
 def last_date_tweeted(api, id):
     global last_date
     tweet = api.user_timeline(id = id, count = 1)[0]
@@ -47,7 +43,7 @@ def last_date_tweeted(api, id):
     return last_date
 
 def last_date_liked(api, id):
-    global last_date
+    last_date = 0
     status = api.favorites(id=id, count=1)[0] #is it faster with Cursor(..).items()?
     #TODO: get last like date. store number of likes, compare with actual number of likes
     return last_date
@@ -88,52 +84,80 @@ def main():
     #print(str(len(afterWL)) + " in afterWL")
 
     # FOLLOWBACK filter
-    afterFB = list(set(afterWL) - set(followers))
+    nonreciprocals = list(set(afterWL) - set(followers))
     #print(str(len(afterFB)) + " in afterFB")
 
     # ACTIVITY filter:
-    afterA = []
-    inactives = []
+    results = []
+    asktounfollow = []
     unfollowed = []
 
-    if args.clean:
-        if len(afterFB)==1: print("checking " + str(len(afterFB)) + " non-reciprocal user inactivity for " + str(args.clean) + " days..")
-        if len(afterFB)>1:  print("checking " + str(len(afterFB)) + " non-reciprocal users inactivity for " + str(args.clean) + " days..")
-        for f in afterFB:
-            if last_date_tweeted(api, f)+timedelta(days=args.clean) < datetime.today():
-                print(" - @\033[1m%s\033[0m has not been active" % api.get_user(f).screen_name)
-                inactives.append(f)
-        print(str(len(inactives)) + " has not been active for " + str(args.clean) + " days")
-        if not len(inactives)==0:
-            if len(inactives)==1: unfollow_msg = ("\033[1m unfollow %i user?\033[0m (y/n) " % len(inactives))
-            if len(inactives)>1: unfollow_msg = ("\033[1m unfollow %i users?\033[0m (y/n) " % len(inactives))
-            if input(unfollow_msg) == "y":
-                for f in inactives:
-                    api.destroy_friendship(f)
-                    unfollowed.append(f)
+    if len(nonreciprocals)==0:
+        return
     else:
-        if len(afterFB)==1: print("checking " + str(len(afterFB)) + " non-reciprocal user activity..")
-        if len(afterFB)>1:  print("checking " + str(len(afterFB)) + " non-reciprocal users activity..")
+        if args.active:
+            active_or_inactive = "active"
+            ndays=args.active
+        if args.inactive:
+            active_or_inactive = "inactive"
+            ndays=args.inactive
+        if len(nonreciprocals)==1: howmany_nonreciprocals = "1 non-reciprocal user has"
+        if len(nonreciprocals)>1:  howmany_nonreciprocals = str(len(nonreciprocals)) + " non-reciprocal users have"
+        print( "checking if %s been %s for %s days.." % (howmany_nonreciprocals, active_or_inactive, ndays) )
 
-        for f in afterFB:
-            if last_date_tweeted(api, f) > last_time_checked: #TODO: last_time_checked = followed_date
-                afterA.append(f)
-                if input(" - @\033[1m%s\033[0m has been active. unfollow? (y/n) " % api.get_user(f).screen_name) == "y":
+        for f in nonreciprocals:
+            if args.active:
+                if last_date_tweeted(api, f) + timedelta(days=ndays) > datetime.today():
+                    print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                    results.append(f)
+                #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
+                    if args.confirmation:
+                        if input( "   unfollow? (y/n) ") == "y":
+                            api.destroy_friendship(f)
+                            unfollowed.append(f)
+                    else:
+                        asktounfollow.append(f)
+
+            if args.inactive:
+                if last_date_tweeted(api, f) + timedelta(days=ndays) < datetime.today():
+                    print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                    results.append(f)
+                    if args.confirmation:
+                        if input( "   unfollow? (y/n) ") == "y":
+                            api.destroy_friendship(f)
+                            print("   unfollowed!")
+                            unfollowed.append(f)
+                    else:
+                        asktounfollow.append(f)
+
+        if len(results)==0: howmany_results = "no one has"
+        if len(results)==1: howmany_results = "1 user has"
+        if len(results)>1: howmany_results = str(len(results)) + " users have"
+        print( "%s been %s for %s days.." % (howmany_results, active_or_inactive, ndays) )
+
+        if asktounfollow:
+            if input( "unfollow %i? (y/n) " % len(asktounfollow) ) == "y":
+                for f in asktounfollow:
                     api.destroy_friendship(f)
                     unfollowed.append(f)
-            #elif has_liked(api, f):
-        print(str(len(afterA)) + " has been active since last time checked")
 
-    #print(str(len(afterA)) + " in afterA")
-    print(str(len(unfollowed)) + " has been unfollowed")
+        if len(unfollowed)==0: howmany_unfollowed = "no one has"
+        if len(unfollowed)==1: howmany_unfollowed = "1 user has"
+        if len(unfollowed)>1: howmany_unfollowed = str(len(unfollowed)) + " users have"
+        print( "%s been unfollowed" % howmany_unfollowed )
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=
         ">>\"separate meat from bone\" tool for twitter, version %s by @jartigag" % __version__,
                                      usage='%(prog)s [options]')
-    parser.add_argument('-c', '--clean', type=int, metavar='N_DAYS',
-                        help='unfollow inactive ones for > N_DAYS')
+    parser.add_argument('-c', '--confirmation', action='store_true',
+                        help='ask for confirmation before each unfollow (otherwise, asked before massive unfollow after listing users)')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-a', '--active', type=int, metavar='N_DAYS',
+                        help='unfollow users who have been active for < N_DAYS')
+    group.add_argument('-i', '--inactive', type=int, metavar='N_DAYS',
+                        help='unfollow users who have been inactive for > N_DAYS')
 
     args = parser.parse_args()
 
