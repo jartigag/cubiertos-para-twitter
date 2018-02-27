@@ -11,7 +11,7 @@ de un @username, extrae **métricas** generales, ratios y tops, *para después e
 ### **cuchillo**
 > “separar la carne del hueso”
 
-*cada x días,* **unfollow** @username si no está en whitelist, no followback y ha estado activo (tweet *o fav (#wip)*)
+*cada x días,* **unfollow** @username si no está en whitelist, no followback y ha estado activo/inactivo por N días*)
 
 ### **cazo**
 > “servir de la olla al plato”
