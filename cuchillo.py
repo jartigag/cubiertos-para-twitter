@@ -19,6 +19,7 @@
 
 #TODO: logging
 #TODO: spinner while long processes
+#TODO: add to Whitelist
 
 import argparse
 import tweepy
@@ -42,14 +43,15 @@ def last_date_tweeted(api, id):
         last_date = tweet.created_at
     return last_date
 
-def last_date_liked(api, id):
-    last_date = 0
-    status = api.favorites(id=id, count=1)[0] #is it faster with Cursor(..).items()?
-    #TODO: get last like date. store number of likes, compare with actual number of likes
-    return last_date
+#def last_date_liked(api, id):
+#    global last_date
+#    status = api.favorites(id=id, count=1)[0]
+#    #TODO: 2 options
+#       - get last like date
+#       - store number of likes, compare with actual number of likes
+#    return last_date
 
 def main():
-    """ To run with python cuchillo.py """
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
@@ -70,12 +72,12 @@ def main():
     m = 0
     for page in tweepy.Cursor(api.followers_ids, screen_name=me).pages():
         followers.extend(page)
-        if m==1:            print("-- you follow +5k followers. retreiving them in pages..")
+        if m==1:            print("-- you have +5k followers. retreiving them in pages..")
         if m>0:             print("-- [+] page " + str(m))
         if len(page)==5000: m += 1
     print("    " + str(len(followers)) + " followers")
 
-    # WHITELIST filter
+    # WHITELIST filter:
     afterWL = []
     for f in following:
         with open(WHITELIST_FILE, encoding="utf-8") as file:
@@ -83,7 +85,7 @@ def main():
             if f not in whitelist: afterWL.append(f)
     #print(str(len(afterWL)) + " in afterWL")
 
-    # FOLLOWBACK filter
+    # FOLLOWBACK filter:
     nonreciprocals = list(set(afterWL) - set(followers))
     #print(str(len(afterFB)) + " in afterFB")
 

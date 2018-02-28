@@ -35,7 +35,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -205,6 +205,8 @@ def main():
         (num_tweets, (end_date - start_date).days, start_date, end_date))
     logger.warning("[+] %d tweets in  : %d days (from %s to %s)" %
         (num_tweets, (end_date - start_date).days, start_date, end_date))
+
+    print("                     = %d months" % ((end_date - start_date).days / 30))
 
     # Checking if we have enough data (considering it's good to have at least 30 days of data)
     if (end_date - start_date).days < 30 and (num_tweets < n_tweets):

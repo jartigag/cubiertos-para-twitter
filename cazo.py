@@ -20,40 +20,60 @@
 import tweepy
 import numpy
 from datetime import datetime
+from time import time,sleep
+from random import randrange
 from tenedor import basics, over_time
 
 __version__ = '0.1'
 
-from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def main():
-    """ To run with python cazo.py """
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
+    api = tweepy.API(auth, compression=True)
+    myUsername = api.me().screen_name
+    myCount = api.me().followers_count
+    print("you are: %s, you have %i followers. let's start!" % (myUsername, myCount))
 
-    username = "jartigag"
+    t = 140 # secs between tries
+    n = 0
+    while True:
+        try:
+            # note it only considers last 20 followers (just testing followers request)
+            randFlwr = api.followers(screen_name=myUsername)[randrange(20)]
+            randFlwrUsername = randFlwr.screen_name
+            randFlwrOfFlwr = api.followers(screen_name=randFlwrUsername)[randrange(20)]
+            randFlwrOfFlwrUsername = randFlwrOfFlwr.screen_name
+            n+=1
+            print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
+            n_tweets, t_ratio, n_followers, f_ratio = basics(api, randFlwrOfFlwrUsername)
+            if f_ratio < 1:
+                n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, randFlwrOfFlwrUsername)
+                if tweets_day_avg > 0.5:
+                    print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
+            sleep(t)
+        except tweepy.error.RateLimitError as e:
+            print('%s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
+            print('%s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
+            reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
+            current_time = int(time())
+            wait_time = reset_time - current_time
+            print("%i fetched with %i-secs pauses (sleeping %i secs)" % (n,t,wait_time))
+            n=0
+            #TODO: progressbar instead of this while
+            while current_time<reset_time:
+                current_time = int(time())
+                wait_time = reset_time - current_time
+                sleep(60)
+                print("sleeping %i secs more.. (=%i minutes)" % (wait_time,wait_time/60))
+        except Exception as e:
+            pass
 
-    n_tweets, t_ratio, n_followers, f_ratio = basics(api, username)
-    n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, username)
-
-    # Prints to test if importing tenedor works:
-    print("___ getting @\033[1m%s\033[0m's data..." % username)
-
-    print("[+] tweets         : \033[1m%s\033[0m" % n_tweets)
-    print("[+] tws/likes ratio: \033[1m%.2f\033[0m"% t_ratio)
-    print("[+] followers      : \033[1m%s\033[0m" % n_followers)
-    print("[+] fwrs/fwng ratio: \033[1m%.2f\033[0m"% f_ratio)
-
-    print("[+] %d tweets in  : \033[1m%d\033[0m days (from %s to %s)" %
-        (num_tweets, n_days, start_date, end_date))
-
-    print("[+] on average     : \033[1m%.2f\033[0m tweets/day, \033[1m%.2f\033[0m %% RTs" % (tweets_day_avg, retweets_percent))
+    #TODO: guardar los ids ya analizados (primero en array, más adelante en db)
+    #              y comparar antes de analizar, para evitar
+    #              malgastar peticiones a la api
+    #TODO: rotar entre keys para acelerar el proceso
 
 if __name__ == '__main__':
-    try:
-        main()
-    except tweepy.error.TweepError as e:
-        print("[\033[91m!\033[0m] twitter error: %s" % e)
-    except Exception as e:
-        print("[\033[91m!\033[0m] error: %s" % e)
+    main()
