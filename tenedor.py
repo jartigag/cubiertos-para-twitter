@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # based on tweets_analyzer by @x0rz
-# 
+#
 # Usage:
 # python tenedor.py screen_name
 #
@@ -35,7 +35,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -201,6 +201,7 @@ def main():
     # Download likes
     get_likes(api, args.name, limit=num_likes)
 
+    #TODO: from (only date) to (date and time)
     print("[+] %d tweets in  : \033[1m%d\033[0m days (from %s to %s)" %
         (num_tweets, (end_date - start_date).days, start_date, end_date))
     logger.warning("[+] %d tweets in  : %d days (from %s to %s)" %
@@ -265,6 +266,8 @@ if __name__ == '__main__':
                         help='limit the number of likes to retreive (default=500)')
     parser.add_argument('-t', '--tweets', type=int, default=500,
                         help='limit the number of tweets to retreive (default=500)')
+
+    #TODO: --human descriptive inform
 
     args = parser.parse_args()
 

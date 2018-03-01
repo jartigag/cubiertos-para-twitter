@@ -26,7 +26,7 @@ from tenedor import basics, over_time
 
 __version__ = '0.1'
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def main():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -36,7 +36,7 @@ def main():
     myCount = api.me().followers_count
     print("you are: %s, you have %i followers. let's start!" % (myUsername, myCount))
 
-    t = 140 # secs between tries
+    t = 2 # secs between tries
     n = 0
     while True:
         try:
@@ -45,6 +45,7 @@ def main():
             randFlwrUsername = randFlwr.screen_name
             randFlwrOfFlwr = api.followers(screen_name=randFlwrUsername)[randrange(20)]
             randFlwrOfFlwrUsername = randFlwrOfFlwr.screen_name
+            if randFlwrOfFlwrUsername is myUsername: return
             n+=1
             print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
             n_tweets, t_ratio, n_followers, f_ratio = basics(api, randFlwrOfFlwrUsername)
@@ -52,6 +53,7 @@ def main():
                 n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, randFlwrOfFlwrUsername)
                 if tweets_day_avg > 0.5:
                     print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
+                    api.add_list_member(slug='cazo',owner_screen_name='@'+myUsername,screen_name=randFlwrOfFlwrUsername)
             sleep(t)
         except tweepy.error.RateLimitError as e:
             print('%s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
