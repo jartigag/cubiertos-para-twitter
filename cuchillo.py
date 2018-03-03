@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 
 __version__ = '0.1'
 
-from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
 
 APP = "cuchillo"
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")
@@ -51,10 +51,7 @@ def last_date_tweeted(api, id):
 #       - store number of likes, compare with actual number of likes
 #    return last_date
 
-def main():
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
+def main(auth, api):
 
     me = api.me().screen_name
     print("___ getting @\033[1m%s\033[0m's data..." % me)
@@ -89,64 +86,79 @@ def main():
     nonreciprocals = list(set(afterWL) - set(followers))
     #print(str(len(afterFB)) + " in afterFB")
 
+    if len(nonreciprocals)==0:
+        return
+    else:
+        activity(api, nonreciprocals)
+
+def activity(api, nonreciprocals):
     # ACTIVITY filter:
     results = []
     asktounfollow = []
     unfollowed = []
 
-    if len(nonreciprocals)==0:
-        return
-    else:
+    if args.active:
+        active_or_inactive = "active"
+        ndays=args.active
+    if args.inactive:
+        active_or_inactive = "inactive"
+        ndays=args.inactive
+    if len(nonreciprocals)==1: howmany_nonreciprocals = "1 non-reciprocal user has"
+    if len(nonreciprocals)>1:  howmany_nonreciprocals = str(len(nonreciprocals)) + " non-reciprocal users have"
+    print( "checking if %s been %s for %s days.." % (howmany_nonreciprocals, active_or_inactive, ndays) )
+
+    for f in nonreciprocals:
         if args.active:
-            active_or_inactive = "active"
-            ndays=args.active
+            if last_date_tweeted(api, f) + timedelta(days=ndays) > datetime.today():
+                print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                results.append(f)
+            #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
+                if args.confirmation:
+                    if input( "   unfollow? (y/n) ") == "y":
+                        api.destroy_friendship(f)
+                        unfollowed.append(f)
+                else:
+                    asktounfollow.append(f)
+
         if args.inactive:
-            active_or_inactive = "inactive"
-            ndays=args.inactive
-        if len(nonreciprocals)==1: howmany_nonreciprocals = "1 non-reciprocal user has"
-        if len(nonreciprocals)>1:  howmany_nonreciprocals = str(len(nonreciprocals)) + " non-reciprocal users have"
-        print( "checking if %s been %s for %s days.." % (howmany_nonreciprocals, active_or_inactive, ndays) )
+            if last_date_tweeted(api, f) + timedelta(days=ndays) < datetime.today():
+                print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                results.append(f)
+                if args.confirmation:
+                    if input( "   unfollow? (y/n) ") == "y":
+                        api.destroy_friendship(f)
+                        print("   unfollowed!")
+                        unfollowed.append(f)
+                else:
+                    asktounfollow.append(f)
 
-        for f in nonreciprocals:
-            if args.active:
-                if last_date_tweeted(api, f) + timedelta(days=ndays) > datetime.today():
-                    print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
-                    results.append(f)
-                #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
-                    if args.confirmation:
-                        if input( "   unfollow? (y/n) ") == "y":
-                            api.destroy_friendship(f)
-                            unfollowed.append(f)
-                    else:
-                        asktounfollow.append(f)
+    if len(results)==0: howmany_results = "no one has"
+    if len(results)==1: howmany_results = "1 user has"
+    if len(results)>1: howmany_results = str(len(results)) + " users have"
+    print( "%s been %s for %s days.." % (howmany_results, active_or_inactive, ndays) )
 
-            if args.inactive:
-                if last_date_tweeted(api, f) + timedelta(days=ndays) < datetime.today():
-                    print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
-                    results.append(f)
-                    if args.confirmation:
-                        if input( "   unfollow? (y/n) ") == "y":
-                            api.destroy_friendship(f)
-                            print("   unfollowed!")
-                            unfollowed.append(f)
-                    else:
-                        asktounfollow.append(f)
+    if asktounfollow:
+        if input( "unfollow %i? (y/n) " % len(asktounfollow) ) == "y":
+            for f in asktounfollow:
+                api.destroy_friendship(f)
+                unfollowed.append(f)
 
-        if len(results)==0: howmany_results = "no one has"
-        if len(results)==1: howmany_results = "1 user has"
-        if len(results)>1: howmany_results = str(len(results)) + " users have"
-        print( "%s been %s for %s days.." % (howmany_results, active_or_inactive, ndays) )
+    if len(unfollowed)==0: howmany_unfollowed = "no one has"
+    if len(unfollowed)==1: howmany_unfollowed = "1 user has"
+    if len(unfollowed)>1: howmany_unfollowed = str(len(unfollowed)) + " users have"
+    print( "%s been unfollowed" % howmany_unfollowed )
 
-        if asktounfollow:
-            if input( "unfollow %i? (y/n) " % len(asktounfollow) ) == "y":
-                for f in asktounfollow:
-                    api.destroy_friendship(f)
-                    unfollowed.append(f)
-
-        if len(unfollowed)==0: howmany_unfollowed = "no one has"
-        if len(unfollowed)==1: howmany_unfollowed = "1 user has"
-        if len(unfollowed)>1: howmany_unfollowed = str(len(unfollowed)) + " users have"
-        print( "%s been unfollowed" % howmany_unfollowed )
+#TODO-wip
+def whitelist(auth, api):
+    username = args.add_to_whitelist
+    with open(WHITELIST_FILE, encoding="utf-8") as file:
+        whitelist = json.load(file)
+        print(whitelist)
+        id = api.get_user(screen_name=username).id
+        whitelist.append(id)
+        with open(WHITELIST_FILE, "w", encoding="utf-8") as outfile:
+            json.dump(whitelist, outfile)
+            print("%s (id=%s) added to whitelist" % (username,id))
 
 if __name__ == '__main__':
 
@@ -160,11 +172,19 @@ if __name__ == '__main__':
                         help='unfollow users who have been active for < N_DAYS')
     group.add_argument('-i', '--inactive', type=int, metavar='N_DAYS',
                         help='unfollow users who have been inactive for > N_DAYS')
+    group.add_argument('-w', '--add_to_whitelist', metavar='USERNAME',
+                        help='add USERNAME to whitelist')
 
     args = parser.parse_args()
 
     try:
-        main()
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        auth.set_access_token(access_token, access_token_secret)
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
+        if args.add_to_whitelist:
+            whitelist(auth, api)
+        else:
+            main(auth, api)
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)
     except Exception as e:
