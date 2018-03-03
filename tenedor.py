@@ -35,7 +35,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -143,7 +143,7 @@ def basics(api, username):
         returns: number of tweets, tweets/likes ratio, number of followers, followers/following ratio """
     user_info = api.get_user(screen_name=username)
 
-    return (user_info.statuses_count, float(user_info.statuses_count/user_info.favourites_count),
+    return (user_info.statuses_count, float(user_info.favourites_count/user_info.statuses_count),
         user_info.followers_count, float(user_info.followers_count/user_info.friends_count))
 
 def over_time(api, username, tweets_limit=500, likes_limit=500):
@@ -178,12 +178,12 @@ def main():
     print("___ getting @\033[1m%s\033[0m's data..." % args.name)
     logger.warning("___ getting %s's data..." % args.name)
 
-    n_tweets, t_ratio, n_followers, f_ratio = basics(api, args.name)
+    n_tweets, l_ratio, n_followers, f_ratio = basics(api, args.name)
 
     print("[+] tweets         : \033[1m%s\033[0m" % n_tweets)
     logger.warning("[+] tweets         : %s" % n_tweets)
-    print("[+] tws/likes ratio: \033[1m%.2f\033[0m"% t_ratio)
-    logger.warning("[+] tws/likes ratio: %.2f"% t_ratio)
+    print("[+] tws/likes ratio: \033[1m%.2f\033[0m"% l_ratio)
+    logger.warning("[+] likes/tws ratio: %.2f"% l_ratio)
     print("[+] followers      : \033[1m%s\033[0m" % n_followers)
     logger.warning("[+] followers      : %s" % n_followers)
     print("[+] fwrs/fwng ratio: \033[1m%.2f\033[0m"% f_ratio)
@@ -195,7 +195,7 @@ def main():
     # Download tweets
     get_tweets(api, args.name, limit=num_tweets)
     # Will retreive all Likes from account (or max limit)
-    num_likes = numpy.amin([args.likes, int(n_tweets/t_ratio)]) # t_ratio needed in other script, so
+    num_likes = numpy.amin([args.likes, int(l_ratio/n_tweets)]) # tl_ratio needed in other script, so
                                                                 # n_likes has to be calculated this way
     print("___ retrieving last %d likes..." % num_likes)
     # Download likes
@@ -256,7 +256,7 @@ def main():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=
-        ">>\"eat one mouthful at a time\" tool for twitter, version %s by @jartigag" % __version__,
+        ">>\"eat one mouthful at a time\" - tool for twitter, version %s by @jartigag" % __version__,
                                      usage='%(prog)s <screen_name> [options]')
     parser.add_argument('name', metavar="screen_name",
                         help='target screen_name')

@@ -151,7 +151,7 @@ def main():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=
-        ">>\"separate meat from bone\" tool for twitter, version %s by @jartigag" % __version__,
+        ">>\"separate meat from bone\" - tool for twitter, version %s by @jartigag" % __version__,
                                      usage='%(prog)s [options]')
     parser.add_argument('-c', '--confirmation', action='store_true',
                         help='ask for confirmation before each unfollow (otherwise, asked before massive unfollow after listing users)')
