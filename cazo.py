@@ -122,4 +122,5 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	main()
+	if not any(vars(args).values()):
+	    parser.error("set some parameters (-h to print them) to filter users")
