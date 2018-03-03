@@ -148,12 +148,10 @@ def activity(api, nonreciprocals):
     if len(unfollowed)>1: howmany_unfollowed = str(len(unfollowed)) + " users have"
     print( "%s been unfollowed" % howmany_unfollowed )
 
-#TODO-wip
 def whitelist(auth, api):
     username = args.add_to_whitelist
     with open(WHITELIST_FILE, encoding="utf-8") as file:
         whitelist = json.load(file)
-        print(whitelist)
         id = api.get_user(screen_name=username).id
         whitelist.append(id)
         with open(WHITELIST_FILE, "w", encoding="utf-8") as outfile:
