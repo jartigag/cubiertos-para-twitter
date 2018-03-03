@@ -27,7 +27,7 @@ from tenedor import basics, over_time
 
 __version__ = '0.1'
 
-from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def main():
 	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -35,7 +35,10 @@ def main():
 	api = tweepy.API(auth, compression=True)
 	myUsername = api.me().screen_name
 	myCount = api.me().followers_count
-	print("you are %s, you have %i followers. let's start!" % (myUsername, myCount))
+	print("[!] hi! you are %s, you have %i followers. let's start!" % (myUsername, myCount))
+
+	todayslist = 'cazo-'+datetime.now().strftime('%y-%m-%d_%H:%M')
+	api.create_list(todayslist,'private')
 
 	t = 140 # secs between tries
 	n = 0
@@ -72,7 +75,7 @@ def main():
 					if retweets_percent < args.retweets_percent: break
 				
 				print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
-				api.add_list_member(slug='cazo',owner_screen_name='@'+myUsername,screen_name=randFlwrOfFlwrUsername)
+				api.add_list_member(slug='todayslist',owner_screen_name='@'+myUsername,screen_name=randFlwrOfFlwrUsername)
 				
 				sleep(t)
 
@@ -123,6 +126,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	if not any(vars(args).values()):
-	    parser.error("set some parameters (-h to print them) to filter users")
-
-	main()
+	    print("[!] set some parameters to filter users!")
+	    parser.print_help()
+	else:
+		main()
