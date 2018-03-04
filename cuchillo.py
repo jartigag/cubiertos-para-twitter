@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 
 __version__ = '0.1'
 
-from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
 
 APP = "cuchillo"
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")

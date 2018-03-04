@@ -27,7 +27,7 @@ from tenedor import basics, over_time
 
 __version__ = '0.1'
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def main():
 	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -35,12 +35,12 @@ def main():
 	api = tweepy.API(auth, compression=True)
 	myUsername = api.me().screen_name
 	myCount = api.me().followers_count
-	print("[!] hi! you are %s, you have %i followers. let's start!" % (myUsername, myCount))
+	print("[-] hi! you are %s, you have %i followers. let's start!" % (myUsername, myCount))
 
 	todayslist = 'cazo-'+datetime.now().strftime('%y-%m-%d_%H:%M')
-	api.create_list(todayslist,'private')
+	list = api.create_list(todayslist,'private')
 
-	t = 140 # secs between tries
+	t = 4 # secs between tries
 	n = 0
 	while True:
 		while True:
@@ -52,9 +52,7 @@ def main():
 				randFlwrOfFlwrUsername = api.get_user(randFlwrOfFlwr).screen_name
 				n+=1
 				print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
-				if randFlwrOfFlwrUsername==myUsername:
-					print("    chosen myself. let's try again")
-					break
+				if randFlwrOfFlwrUsername==myUsername: break
 				
 				n_tweets, l_ratio, n_followers, f_ratio = basics(api, randFlwrOfFlwrUsername)
 				
@@ -75,10 +73,10 @@ def main():
 					if retweets_percent < args.retweets_percent: break
 				
 				print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
-				api.add_list_member(slug='todayslist',owner_screen_name='@'+myUsername,screen_name=randFlwrOfFlwrUsername)
-				
+				api.add_list_member(list_id=list.id,owner_screen_name='@'+myUsername,id=randFlwrOfFlwr)
+			
 				sleep(t)
-
+			
 			except tweepy.error.RateLimitError as e:
 				print('    %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
 				print('    %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
