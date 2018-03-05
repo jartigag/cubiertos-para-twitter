@@ -15,10 +15,9 @@
 # python3 cazo.py
 #
 # Install:
-# pip3 install tweepy numpy
+# pip3 install tweepy
 
 import tweepy
-import numpy
 import argparse
 from datetime import datetime
 from time import time,sleep

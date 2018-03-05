@@ -17,11 +17,10 @@
 # python tenedor.py screen_name
 #
 # Install:
-# pip install tweepy tqdm numpy
+# pip install tweepy tqdm
 
 from tqdm import tqdm
 import tweepy
-import numpy
 import argparse
 import collections
 import datetime
@@ -121,7 +120,7 @@ def get_likes(api, username, limit):
 
 def print_stats(dataset, top=5):
     """ Displays top values by order """
-    sum = numpy.sum(list(dataset.values()))
+    sum = sum(list(dataset.values()))
     i = 0
     if sum:
         sorted_keys = sorted(dataset, key=dataset.get, reverse=True)
@@ -158,7 +157,11 @@ def over_time(api, username, tweets_limit=500, likes_limit=500):
     for status in tweepy.Cursor(api.favorites, screen_name=username).items(likes_limit):
         process_like(status)
 
-    num_tweets = numpy.amin([tweets_limit, api.get_user(screen_name=username).statuses_count])
+    if tweets_limit < api.get_user(screen_name=username).statuses_count:
+        num_tweets = tweets_limit
+    else:
+        num_tweets = api.get_user(screen_name=username).statuses_count
+
     tweets_day_avg = 0.00
     retweets_percent = 0.00
 
@@ -190,13 +193,19 @@ def main():
     logger.warning("[+] fwrs/fwng ratio: %.2f"% f_ratio)
 
     # Will retreive all Tweets from account (or max limit)
-    num_tweets = numpy.amin([args.tweets, n_tweets])
+    if n_tweets < args.tweets:
+        num_tweets = n_tweets
+    else:
+        num_tweets = args.tweets
     print("___ retrieving last %d tweets..." % num_tweets)
     # Download tweets
     get_tweets(api, args.name, limit=num_tweets)
     # Will retreive all Likes from account (or max limit)
-    num_likes = numpy.amin([args.likes, int(l_ratio/n_tweets)]) # tl_ratio needed in other script, so
-                                                                # n_likes has to be calculated this way
+    if args.likes < int(l_ratio/n_tweets):
+        num_likes = args.likes
+    else:
+        num_likes = int(l_ratio/n_tweets)   # l_ratio needed in other script, so
+                                            # n_likes has to be calculated this way
     print("___ retrieving last %d likes..." % num_likes)
     # Download likes
     get_likes(api, args.name, limit=num_likes)
