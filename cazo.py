@@ -43,57 +43,56 @@ def main():
 	t = 4 # secs between tries
 	n = 0
 	while True:
-		while True:
-			try:
-				randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
-				randFlwrUsername = api.get_user(randFlwr).screen_name
-				randFlwrCount = api.get_user(randFlwr).followers_count
-				randFlwrOfFlwr = api.followers_ids(screen_name=randFlwrUsername)[randrange(randFlwrCount)]
-				randFlwrOfFlwrUsername = api.get_user(randFlwrOfFlwr).screen_name
-				n+=1
-				print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
-				if randFlwrOfFlwrUsername==myUsername: break
-				
-				n_tweets, l_ratio, n_followers, f_ratio = basics(api, randFlwrOfFlwrUsername)
-				
-				if args.tweets:
-					if n_tweets > args.tweets: break
-				if args.likes_tweets_ratio:
-					if l_ratio > args.likes_tweets_ratio: break
-				if args.followers:
-					if n_followers > args.followers: break
-				if args.followers_following_ratio:
-					if f_ratio > args.followers_following_ratio: break
-				
-				n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, randFlwrOfFlwrUsername)
-				
-				if args.tweets_day_average:
-					if tweets_day_avg < args.tweets_day_average: break
-				if args.retweets_percent:
-					if retweets_percent < args.retweets_percent: break
-				
-				print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
-				api.add_list_member(list_id=list.id,owner_screen_name='@'+myUsername,id=randFlwrOfFlwr)
+		try:
+			randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
+			randFlwrUsername = api.get_user(randFlwr).screen_name
+			randFlwrCount = api.get_user(randFlwr).followers_count
+			randFlwrOfFlwr = api.followers_ids(screen_name=randFlwrUsername)[randrange(randFlwrCount)]
+			randFlwrOfFlwrUsername = api.get_user(randFlwrOfFlwr).screen_name
+			n+=1
+			print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
+			if randFlwrOfFlwrUsername==myUsername: continue
 			
-				sleep(t)
+			n_tweets, l_ratio, n_followers, f_ratio = basics(api, randFlwrOfFlwrUsername)
 			
-			except tweepy.error.RateLimitError as e:
-				print('    %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
-				print('    %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
-				reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
+			if args.tweets:
+				if n_tweets > args.tweets: continue
+			if args.likes_tweets_ratio:
+				if l_ratio > args.likes_tweets_ratio: continue
+			if args.followers:
+				if n_followers > args.followers: continue
+			if args.followers_following_ratio:
+				if f_ratio > args.followers_following_ratio: continue
+			
+			n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, randFlwrOfFlwrUsername)
+			
+			if args.tweets_day_average:
+				if tweets_day_avg < args.tweets_day_average: continue
+			if args.retweets_percent:
+				if retweets_percent < args.retweets_percent: continue
+			
+			print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
+			api.add_list_member(list_id=list.id,owner_screen_name='@'+myUsername,id=randFlwrOfFlwr)
+		
+			sleep(t)
+		
+		except tweepy.error.RateLimitError as e:
+			print('    %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
+			print('    %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
+			reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
+			current_time = int(time())
+			wait_time = reset_time - current_time
+			print(" == %i fetched with %i-secs pauses (sleeping %i secs)" % (n,t,wait_time))
+			n=0
+			#TODO: progressbar instead of this while
+			while current_time<reset_time:
 				current_time = int(time())
 				wait_time = reset_time - current_time
-				print(" == %i fetched with %i-secs pauses (sleeping %i secs)" % (n,t,wait_time))
-				n=0
-				#TODO: progressbar instead of this while
-				while current_time<reset_time:
-					current_time = int(time())
-					wait_time = reset_time - current_time
-					sleep(60)
-					print("sleeping %i secs more.. (=%i minutes)" % (wait_time,wait_time/60))
-			except Exception as e:
-				print(e)
-				pass
+				sleep(60)
+				print("sleeping %i secs more.. (=%i minutes)" % (wait_time,wait_time/60))
+		except Exception as e:
+			print(e)
+			pass
 		sleep(t)
 
 	#TODO: guardar los ids ya analizados (primero en array, más adelante en db)
