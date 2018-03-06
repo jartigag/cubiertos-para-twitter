@@ -28,6 +28,8 @@ __version__ = '0.1'
 
 from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
 
+targetUser = ""
+
 def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 	if args.tweets:
 		if args.tweets > 0:
@@ -69,6 +71,26 @@ def checkOverTime(tweets_day_avg, retweets_percent):
 
 	return True
 
+class KeywordListener(tweepy.StreamListener):
+
+	def on_status(self, status):
+		print(status.text)
+		print("---")
+
+		try:
+			targetUser = status.user.screen_name
+		except:
+			pass
+
+		return True
+
+
+	def on_error(self, status_code):
+		return True # don't kill the stream
+
+	def on_timeout(self):
+		return True # don't kill the stream
+	
 def main():
 	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 	auth.set_access_token(access_token, access_token_secret)
@@ -78,35 +100,39 @@ def main():
 	print("[-] hi! you are %s, you have %i followers. let's start!" % (myUsername, myCount))
 
 	todayslist = 'cazo-'+datetime.now().strftime('%y-%m-%d_%H:%M')
-	list = api.create_list(todayslist,'private')
+	targetList = api.create_list(todayslist,'private')
 
 	t = 120 # secs between tries
 	n = 0
 	while True:
 		try:
 
-			randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
-			randFlwrUsername = api.get_user(randFlwr).screen_name
-			randFlwrCount = api.get_user(randFlwr).followers_count
-			randFlwrOfFlwr = api.followers_ids(screen_name=randFlwrUsername)[randrange(randFlwrCount)]
-			randFlwrOfFlwrUsername = api.get_user(randFlwrOfFlwr).screen_name
+			if args.keyword:
+				stream = tweepy.streaming.Stream(auth, KeywordListener())
+				stream.filter(track=[args.keyword])
+			else:
+				randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
+				randFlwrUsername = api.get_user(randFlwr).screen_name
+				randFlwrCount = api.get_user(randFlwr).followers_count
+				randFlwrOfFlwr = api.followers_ids(screen_name=randFlwrUsername)[randrange(randFlwrCount)]
+				targetUser = api.get_user(randFlwrOfFlwr).screen_name
 
 			n+=1
 			
 			print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
 			
-			if randFlwrOfFlwrUsername==myUsername: continue
+			if targetUser==myUsername: continue
 			
-			n_tweets, l_ratio, n_followers, f_ratio = basics(api, randFlwrOfFlwrUsername)
+			n_tweets, l_ratio, n_followers, f_ratio = basics(api, targetUser)
 			
 			if not checkBasics(n_tweets, l_ratio, n_followers, f_ratio): continue
 			
-			n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, randFlwrOfFlwrUsername)
+			n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, targetUser)
 			
 			if not checkOverTime(tweets_day_avg, retweets_percent): continue
 			
-			print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (randFlwrOfFlwrUsername,f_ratio,tweets_day_avg))
-			api.add_list_member(list_id=list.id,owner_screen_name='@'+myUsername,id=randFlwrOfFlwr)
+			print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (targetUser,f_ratio,tweets_day_avg))
+			api.add_list_member(list_id=targetList.id,owner_screen_name='@'+myUsername,id=randFlwrOfFlwr)
 		
 			sleep(t)
 
@@ -158,11 +184,13 @@ if __name__ == '__main__':
 	parser.add_argument('-p', '--retweets_percent', type=float,
 						help='filter by retweets percent')
 
+	parser.add_argument('-k', '--keyword',
+						help='target users by keyword')
+
 	args = parser.parse_args()
 
 	if not any(vars(args).values()):
-	    print("[!] set some parameters to filter users!")
-	    parser.print_help()
+		print("[!] set some parameters to filter users!")
+		parser.print_help()
 	else:
-		#print(vars(args).values())
 		main()

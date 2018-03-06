@@ -74,6 +74,8 @@ def main(auth, api):
         if len(page)==5000: m += 1
     print("    " + str(len(followers)) + " followers")
 
+    print("ratio fwrs/fwng: \033[1m%.2f\033[0m" % float(len(followers)/len(following)))
+
     # WHITELIST filter:
     afterWL = []
     for f in following:
