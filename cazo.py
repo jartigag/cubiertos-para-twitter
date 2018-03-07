@@ -26,9 +26,7 @@ from tenedor import basics, over_time
 
 __version__ = '0.1'
 
-from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
-
-targetUser = ""
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 	if args.tweets:
@@ -73,22 +71,20 @@ def checkOverTime(tweets_day_avg, retweets_percent):
 
 class KeywordListener(tweepy.StreamListener):
 
+	def __init__(self):
+	    self.targetUser = ""
+	    super(KeywordListener,self).__init__()
+
 	def on_status(self, status):
-		print(status.text)
-		print("---")
-
-		try:
-			targetUser = status.user.screen_name
-		except:
-			pass
-
-		return True
-
+		print("    %s just tweeted: \033[1m<<\033[0m %s \033[1m>>\033[0m" % (status.user.screen_name,status.text))
+		self.targetUser = status.user.screen_name
+		return False
 
 	def on_error(self, status_code):
+		print("error on KeywordListener: " + status_code + ". retrying..")
 		return True # don't kill the stream
-
 	def on_timeout(self):
+		print("timeout on KeywordListener. retrying..")
 		return True # don't kill the stream
 	
 def main():
@@ -99,17 +95,27 @@ def main():
 	myCount = api.me().followers_count
 	print("[-] hi! you are %s, you have %i followers. let's start!" % (myUsername, myCount))
 
-	todayslist = 'cazo-'+datetime.now().strftime('%y-%m-%d_%H:%M')
-	targetList = api.create_list(todayslist,'private')
+	if args.keyword:
+		keywordList = args.keyword+'-'+datetime.now().strftime('%d%b%y_%H:%M')
+		targetList = api.create_list(keywordList,'private')
+	else:
+		todayslist = 'cazo-'+datetime.now().strftime('%d%b%y_%H:%M')
+		targetList = api.create_list(todayslist,'private')
 
-	t = 120 # secs between tries
+
+	t = 1 # secs between reqs
 	n = 0
+
+	print("[>] target users match this params: ") #TODO: print target params
+	if args.keyword:
+		print("[_] capturing #%s hasthag on the fly.." % args.keyword)
 	while True:
 		try:
-
 			if args.keyword:
-				stream = tweepy.streaming.Stream(auth, KeywordListener())
+				kwListener = KeywordListener()
+				stream = tweepy.streaming.Stream(auth, kwListener)
 				stream.filter(track=[args.keyword])
+				targetUser = kwListener.targetUser
 			else:
 				randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
 				randFlwrUsername = api.get_user(randFlwr).screen_name
@@ -131,14 +137,15 @@ def main():
 			
 			if not checkOverTime(tweets_day_avg, retweets_percent): continue
 			
-			print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day)" % (targetUser,f_ratio,tweets_day_avg))
-			api.add_list_member(list_id=targetList.id,owner_screen_name='@'+myUsername,id=randFlwrOfFlwr)
-		
+			print("    \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day) matches required params!" % (targetUser,f_ratio,tweets_day_avg))
+			#TODO: in () print required params
+			api.add_list_member(list_id=targetList.id,owner_screen_name='@'+myUsername,id=targetUser)
+
 			sleep(t)
 
 		except tweepy.error.RateLimitError as e:
-			print('    %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
-			print('    %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
+			print(' [\033[91m!\033[0m] %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
+			print(' [\033[91m!\033[0m] %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
 			
 			reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
 			current_time = int(time())
@@ -157,6 +164,9 @@ def main():
 
 		except Exception as e:
 			print(e)
+			if e.args[0]=='Twitter error response: status code = 429':
+				print(" [\033[91m!\033[0m] that means: tenedor.py has made too many requests.. give it a break ;)")
+				sleep(30)
 			pass
 
 		sleep(t)

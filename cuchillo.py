@@ -74,7 +74,8 @@ def main(auth, api):
         if len(page)==5000: m += 1
     print("    " + str(len(followers)) + " followers")
 
-    print("ratio fwrs/fwng: \033[1m%.2f\033[0m" % float(len(followers)/len(following)))
+    fratio = float(len(followers)/len(following))
+    print("ratio fwrs/fwng: \033[1m%.2f\033[0m" % fratio)
 
     # WHITELIST filter:
     afterWL = []
@@ -92,6 +93,10 @@ def main(auth, api):
         return
     else:
         activity(api, nonreciprocals)
+
+    fratio_new = float(api.get_user(screen_name=me).followers_count/api.get_user(screen_name=me).friends_count)
+    if fratio_new-fratio!=0:
+        print("your ratio fwrs/fwng has changed to: %.2f ( +\033[1m%.2f\033[0m)" % (fratio_new, fratio_new-fratio))
 
 def activity(api, nonreciprocals):
     # ACTIVITY filter:
@@ -150,6 +155,7 @@ def activity(api, nonreciprocals):
     if len(unfollowed)>1: howmany_unfollowed = str(len(unfollowed)) + " users have"
     print( "%s been unfollowed" % howmany_unfollowed )
 
+    
 def whitelist(auth, api):
     username = args.add_to_whitelist
     with open(WHITELIST_FILE, encoding="utf-8") as file:
