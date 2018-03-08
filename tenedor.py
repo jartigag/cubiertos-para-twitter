@@ -19,11 +19,17 @@
 # Install:
 # pip install tweepy tqdm
 
+#TODO: --human descriptive inform
+#TODO: send inform via dm
+#TODO: analyze groups (from .txt, from fwing, from lists), print stats
+
+#TODO: log when a user was analyzed (datetime - user)
+
 from tqdm import tqdm
 import tweepy
 import argparse
 import collections
-import datetime
+from datetime import datetime
 import os
 import logging
 
@@ -34,7 +40,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -120,16 +126,16 @@ def get_likes(api, username, limit):
 
 def print_stats(dataset, top=5):
     """ Displays top values by order """
-    sum = sum(list(dataset.values()))
+    suma = sum(list(dataset.values()))
     i = 0
-    if sum:
+    if suma:
         sorted_keys = sorted(dataset, key=dataset.get, reverse=True)
         max_len_key = max([len(x) for x in sorted_keys][:top])  # use to adjust column width
         for k in sorted_keys:
             print(("- \033[1m{:<%d}\033[0m {:>6} {:<4}" % max_len_key)
-                  .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / sum) * 100)))
+                  .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / suma) * 100)))
             logger.warning(("- {:<%d} {:>6} {:<4}" % max_len_key)
-                  .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / sum) * 100)))
+                  .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / suma) * 100)))
             i += 1
             if i >= top:
                 break
@@ -139,7 +145,7 @@ def print_stats(dataset, top=5):
 
 def basics(api, username):
     """ Get basic info from username account
-        returns: number of tweets, tweets/likes ratio, number of followers, followers/following ratio """
+        returns: number of tweets, likes/tweet ratio, number of followers, followers/following ratio """
     user_info = api.get_user(screen_name=username)
 
     return (user_info.statuses_count, float(user_info.favourites_count/user_info.statuses_count),
@@ -185,8 +191,8 @@ def main():
 
     print("[+] tweets         : \033[1m%s\033[0m" % n_tweets)
     logger.warning("[+] tweets         : %s" % n_tweets)
-    print("[+] tws/likes ratio: \033[1m%.2f\033[0m"% l_ratio)
-    logger.warning("[+] likes/tws ratio: %.2f"% l_ratio)
+    print("[+] likes/tw ratio : \033[1m%.2f\033[0m"% l_ratio)
+    logger.warning("[+] likes/tw ratio : %.2f"% l_ratio)
     print("[+] followers      : \033[1m%s\033[0m" % n_followers)
     logger.warning("[+] followers      : %s" % n_followers)
     print("[+] fwrs/fwng ratio: \033[1m%.2f\033[0m"% f_ratio)
@@ -201,27 +207,27 @@ def main():
     # Download tweets
     get_tweets(api, args.name, limit=num_tweets)
     # Will retreive all Likes from account (or max limit)
-    if args.likes < int(l_ratio/n_tweets):
+    if args.likes < int(l_ratio*n_tweets):
         num_likes = args.likes
     else:
-        num_likes = int(l_ratio/n_tweets)   # l_ratio needed in other script, so
+        num_likes = int(l_ratio*n_tweets)   # l_ratio needed in other script, so
                                             # n_likes has to be calculated this way
-    print("___ retrieving last %d likes..." % num_likes)
-    # Download likes
-    get_likes(api, args.name, limit=num_likes)
+    if num_likes != 0:
+        print("___ retrieving last %d likes..." % num_likes)
+        # Download likes
+        get_likes(api, args.name, limit=num_likes)
 
-    #TODO: from (only date) to (date and time)
     print("[+] %d tweets in  : \033[1m%d\033[0m days (from %s to %s)" %
-        (num_tweets, (end_date - start_date).days, start_date, end_date))
+        (num_tweets, (end_date - start_date).days, datetime.strftime(start_date, '%Y-%m-%d'), end_date))
     logger.warning("[+] %d tweets in  : %d days (from %s to %s)" %
-        (num_tweets, (end_date - start_date).days, start_date, end_date))
+        (num_tweets, (end_date - start_date).days, datetime.strftime(start_date, '%Y-%m-%d'), end_date))
 
     print("                     = %d months" % ((end_date - start_date).days / 30))
 
     # Checking if we have enough data (considering it's good to have at least 30 days of data)
     if (end_date - start_date).days < 30 and (num_tweets < n_tweets):
-         print("[\033[91m!\033[0m] not enough tweets from user, consider retrying (--limit)")
-         logger.warning("[!] not enough tweets from user, consider retrying (--limit)")
+         print("[*] %i tweets are not enough in this case, consider retrying (--limit)" % num_tweets)
+         logger.warning("[*] %i tweets are not enough in this case, consider retrying (--limit)" % num_tweets)
 
     if (end_date - start_date).days != 0:
         print("[+] on average     : \033[1m%.2f\033[0m tweets/day, \033[1m%.2f\033[0m %% RTs" %
@@ -276,26 +282,24 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--tweets', type=int, default=500,
                         help='limit the number of tweets to retreive (default=500)')
 
-    #TODO: --human descriptive inform
-
     args = parser.parse_args()
 
     logger = logging.getLogger()
     logger.setLevel(logging.WARNING)
-    file_dir = os.path.join(os.path.expanduser("~"), "analizados")
+    #TODO: if file_dir doesn't exist
+    file_dir = os.path.join(os.path.expanduser("~"), "twanalizados")
 
     if args.group:
         group_dir = os.path.join(file_dir, args.group)
         print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
-        logFile = logging.FileHandler(os.path.join(group_dir, args.name + ".txt"))
+        userFile = logging.FileHandler(os.path.join(group_dir, args.name + ".txt"))
     else:
-        logFile = logging.FileHandler(os.path.join(file_dir, args.name + ".txt"))
+        userFile = logging.FileHandler(os.path.join(file_dir, args.name + ".txt"))
 
-    logFile.setLevel(logging.WARNING) #TODO: INFO level?
-    logger.addHandler(logFile)
+    userFile.setLevel(logging.WARNING) #TODO: INFO level?
+    logger.addHandler(userFile)
 
     try:
-        #TODO: pick users from list, analyze and send inform via dm
         main()
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)

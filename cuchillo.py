@@ -17,15 +17,16 @@
 # Install:
 # pip3 install tweepy
 
-#TODO: logging
-#TODO: spinner while long processes
-#TODO: add to Whitelist
+#TODO: filter by params
+
+#TODO: log my numbers (datetime - followers, following, f_ratio, unfollows)
 
 import argparse
 import tweepy
 import os
 import json
 from datetime import datetime, timedelta
+from tenedor import basics, over_time
 
 __version__ = '0.1'
 
@@ -43,18 +44,61 @@ def last_date_tweeted(api, id):
         last_date = tweet.created_at
     return last_date
 
+#TODO: last_date_liked
+#
 #def last_date_liked(api, id):
 #    global last_date
 #    status = api.favorites(id=id, count=1)[0]
-#    #TODO: 2 options
+#    # 2 options
 #       - get last like date
 #       - store number of likes, compare with actual number of likes
 #    return last_date
 
+def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
+    if args.tweets:
+        if args.tweets > 0:
+            if n_tweets < args.tweets: return False
+        if args.tweets < 0:
+            if n_tweets > -args.tweets: return False
+
+    if args.likes_tweets_ratio:
+        if args.likes_tweets_ratio > 0:
+            if l_ratio < args.likes_tweets_ratio: return False
+        if args.likes_tweets_ratio < 0:
+            if l_ratio > -args.likes_tweets_ratio: return False
+
+    if args.followers:
+        if args.followers > 0:
+            if n_followers < args.followers: return False
+        if args.followers < 0:
+            if n_followers > -args.followers: return False
+
+    if args.followers_following_ratio:
+        if args.followers_following_ratio > 0:
+            if f_ratio < args.followers_following_ratio: return False
+        if args.followers_following_ratio < 0:
+            if f_ratio > -args.followers_following_ratio: return False
+
+    return True
+
+def checkOverTime(tweets_day_avg, retweets_percent):
+    if args.tweets_day_average:
+        if args.tweets_day_average > 0:
+            if tweets_day_avg < args.tweets_day_average: return False
+        if args.tweets_day_average < 0:
+            if tweets_day_avg > -args.tweets_day_average: return False
+    if args.retweets_percent:
+        if args.retweets_percent > 0:
+            if retweets_percent < args.retweets_percent: return False
+        if args.retweets_percent < 0:
+            if retweets_percent > -args.retweets_percent: return False
+
+    return True
+
 def main(auth, api):
 
-    me = api.me().screen_name
-    print("___ getting @\033[1m%s\033[0m's data..." % me)
+    myUsername = api.me().screen_name
+    print("[-] hi %s! getting your following and followers.." % myUsername)
 
     following = []
     n = 0
@@ -121,6 +165,7 @@ def activity(api, nonreciprocals):
                 results.append(f)
             #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
                 if args.confirmation:
+                    #TODO: print more user info
                     if input( "   unfollow? (y/n) ") == "y":
                         api.destroy_friendship(f)
                         unfollowed.append(f)
@@ -173,6 +218,20 @@ if __name__ == '__main__':
                                      usage='%(prog)s [options]')
     parser.add_argument('-c', '--confirmation', action='store_true',
                         help='ask for confirmation before each unfollow (otherwise, asked before massive unfollow after listing users)')
+
+    parser.add_argument('-f', '--followers', type=int,
+                        help='filter by number of followers')
+    parser.add_argument('-l', '--likes_tweets_ratio', type=float,
+                        help='filter by likes/tweets ratio')
+    parser.add_argument('-r', '--followers_following_ratio', type=float,
+                        help='filter by followers/following ratio')
+    parser.add_argument('-t', '--tweets', type=int,
+                        help='filter by number of tweets')
+    parser.add_argument('-d', '--tweets_day_average', type=float,
+                        help='filter by tweets/day average')
+    parser.add_argument('-p', '--retweets_percent', type=float,
+                        help='filter by retweets percent')
+
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-a', '--active', type=int, metavar='N_DAYS',
                         help='unfollow users who have been active for < N_DAYS')
@@ -189,6 +248,9 @@ if __name__ == '__main__':
         api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
         if args.add_to_whitelist:
             whitelist(auth, api)
+            n_args = sum([1 for arg in vars(args).values() if arg])
+            if n_args > 1:
+                print("[only -w USERNAME arg is considered, other %i args are nosense here]" % (n_args-1))
         else:
             main(auth, api)
     except tweepy.error.TweepError as e:
