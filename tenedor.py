@@ -14,16 +14,14 @@
 # based on tweets_analyzer by @x0rz
 #
 # Usage:
-# python tenedor.py screen_name
+# python3 tenedor.py <screen_name> [options]
 #
 # Install:
-# pip install tweepy tqdm
+# pip3 install tweepy tqdm
 
 #TODO: --human descriptive inform
 #TODO: send inform via dm
-#TODO: analyze groups (from .txt, from fwing, from lists), print stats
-
-#TODO: log when a user was analyzed (datetime - user)
+#TODO: analyze groups (from .txt, -i from fwing, f, -e from flwrs, from lists), print stats (avg, distrib, most freq)
 
 from tqdm import tqdm
 import tweepy
@@ -40,7 +38,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -285,18 +283,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     logger = logging.getLogger()
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.WARNING) #TODO: INFO level?
     #TODO: if file_dir doesn't exist
     file_dir = os.path.join(os.path.expanduser("~"), "twanalizados")
 
     if args.group:
         group_dir = os.path.join(file_dir, args.group)
         print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
-        userFile = logging.FileHandler(os.path.join(group_dir, args.name + ".txt"))
+        userFile = logging.FileHandler(os.path.join(group_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
     else:
-        userFile = logging.FileHandler(os.path.join(file_dir, args.name + ".txt"))
+        userFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
 
-    userFile.setLevel(logging.WARNING) #TODO: INFO level?
     logger.addHandler(userFile)
 
     try:

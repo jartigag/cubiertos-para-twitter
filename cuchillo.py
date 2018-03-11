@@ -12,21 +12,20 @@
 # GNU General Public License for more details.
 #
 # Usage:
-# python3 cuchillo.py
+# python3 cuchillo.py [options]
 #
 # Install:
 # pip3 install tweepy
 
 #TODO: filter by params
 
-#TODO: log my numbers (datetime - followers, following, f_ratio, unfollows)
-
 import argparse
 import tweepy
-import os
 import json
 from datetime import datetime, timedelta
 from tenedor import basics, over_time
+import os
+import logging
 
 __version__ = '0.1'
 
@@ -95,31 +94,46 @@ def checkOverTime(tweets_day_avg, retweets_percent):
 
     return True
 
+def whitelist(auth, api):
+    username = args.add_to_whitelist
+    with open(WHITELIST_FILE, encoding="utf-8") as file:
+        whitelist = json.load(file)
+        id = api.get_user(screen_name=username).id
+        whitelist.append(id)
+        with open(WHITELIST_FILE, "w", encoding="utf-8") as outfile:
+            json.dump(whitelist, outfile)
+            print(" >> %s (id=%s) added to whitelist" % (username,id))
+
 def main(auth, api):
 
     myUsername = api.me().screen_name
     print("[-] hi %s! getting your following and followers.." % myUsername)
 
+    logger.warning(myUsername+" - "+datetime.now().strftime('%Y %b %d - %H:%M'))
+
     following = []
     n = 0
-    for page in tweepy.Cursor(api.friends_ids, screen_name=me).pages():
+    for page in tweepy.Cursor(api.friends_ids, screen_name=myUsername).pages():
         following.extend(page)
         if n==1:            print("-- you follow +5k. retreiving them in pages..")
         if n>0:             print("-- [+] page " + str(n))
         if len(page)==5000: n += 1
-    print("    " + str(len(following)) + " following")
+    print("[_] " + str(len(following)) + " following")
+    logger.warning("[_] " + str(len(following)) + " following")
 
     followers = []
     m = 0
-    for page in tweepy.Cursor(api.followers_ids, screen_name=me).pages():
+    for page in tweepy.Cursor(api.followers_ids, screen_name=myUsername).pages():
         followers.extend(page)
         if m==1:            print("-- you have +5k followers. retreiving them in pages..")
         if m>0:             print("-- [+] page " + str(m))
         if len(page)==5000: m += 1
-    print("    " + str(len(followers)) + " followers")
+    print("[_] " + str(len(followers)) + " followers")
+    logger.warning("[_] " + str(len(followers)) + " followers")
 
     fratio = float(len(followers)/len(following))
-    print("ratio fwrs/fwng: \033[1m%.2f\033[0m" % fratio)
+    print(" >> ratio fwrs/fwng: \033[1m%.2f\033[0m" % fratio)
+    logger.warning(" >> ratio fwrs/fwng: %.2f" % fratio)
 
     # WHITELIST filter:
     afterWL = []
@@ -138,10 +152,10 @@ def main(auth, api):
     else:
         activity(api, nonreciprocals)
 
-    fratio_new = float(api.get_user(screen_name=me).followers_count/api.get_user(screen_name=me).friends_count)
+    fratio_new = float(api.get_user(screen_name=myUsername).followers_count/api.get_user(screen_name=myUsername).friends_count)
     if fratio_new-fratio!=0:
-        print("your ratio fwrs/fwng has changed to: %.2f ( +\033[1m%.2f\033[0m)" % (fratio_new, fratio_new-fratio))
-
+        print(" >> your ratio fwrs/fwng has changed to: %.2f ( +\033[1m%.2f\033[0m)" % (fratio_new, fratio_new-fratio))
+        logger.warning(" >> your ratio fwrs/fwng has changed to: %.2f ( +%.2f)" % (fratio_new, fratio_new-fratio))
 def activity(api, nonreciprocals):
     # ACTIVITY filter:
     results = []
@@ -156,17 +170,17 @@ def activity(api, nonreciprocals):
         ndays=args.inactive
     if len(nonreciprocals)==1: howmany_nonreciprocals = "1 non-reciprocal user has"
     if len(nonreciprocals)>1:  howmany_nonreciprocals = str(len(nonreciprocals)) + " non-reciprocal users have"
-    print( "checking if %s been %s for %s days.." % (howmany_nonreciprocals, active_or_inactive, ndays) )
+    print( "[_] checking if %s been %s for %s days.." % (howmany_nonreciprocals, active_or_inactive, ndays) )
 
     for f in nonreciprocals:
         if args.active:
             if last_date_tweeted(api, f) + timedelta(days=ndays) > datetime.today():
-                print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                print("    >> @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
                 results.append(f)
             #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
                 if args.confirmation:
                     #TODO: print more user info
-                    if input( "   unfollow? (y/n) ") == "y":
+                    if input( "    unfollow? (y/n) ") == "y":
                         api.destroy_friendship(f)
                         unfollowed.append(f)
                 else:
@@ -174,12 +188,12 @@ def activity(api, nonreciprocals):
 
         if args.inactive:
             if last_date_tweeted(api, f) + timedelta(days=ndays) < datetime.today():
-                print(" - @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                print("    >> @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
                 results.append(f)
                 if args.confirmation:
-                    if input( "   unfollow? (y/n) ") == "y":
+                    if input( "    unfollow? (y/n) ") == "y":
                         api.destroy_friendship(f)
-                        print("   unfollowed!")
+                        print("    unfollowed!")
                         unfollowed.append(f)
                 else:
                     asktounfollow.append(f)
@@ -187,10 +201,11 @@ def activity(api, nonreciprocals):
     if len(results)==0: howmany_results = "no one has"
     if len(results)==1: howmany_results = "1 user has"
     if len(results)>1: howmany_results = str(len(results)) + " users have"
-    print( "%s been %s for %s days.." % (howmany_results, active_or_inactive, ndays) )
+    print( " >> %s been %s for %s days.." % (howmany_results, active_or_inactive, ndays) )
+    logger.warning( " >> %s been %s for %s days.." % (howmany_results, active_or_inactive, ndays) )
 
     if asktounfollow:
-        if input( "unfollow %i? (y/n) " % len(asktounfollow) ) == "y":
+        if input( "    unfollow %i? (y/n) " % len(asktounfollow) ) == "y":
             for f in asktounfollow:
                 api.destroy_friendship(f)
                 unfollowed.append(f)
@@ -198,18 +213,11 @@ def activity(api, nonreciprocals):
     if len(unfollowed)==0: howmany_unfollowed = "no one has"
     if len(unfollowed)==1: howmany_unfollowed = "1 user has"
     if len(unfollowed)>1: howmany_unfollowed = str(len(unfollowed)) + " users have"
-    print( "%s been unfollowed" % howmany_unfollowed )
+    print( " >> %s been unfollowed" % howmany_unfollowed )
+    logger.warning( " >> %s been unfollowed" % howmany_unfollowed )
 
-    
-def whitelist(auth, api):
-    username = args.add_to_whitelist
-    with open(WHITELIST_FILE, encoding="utf-8") as file:
-        whitelist = json.load(file)
-        id = api.get_user(screen_name=username).id
-        whitelist.append(id)
-        with open(WHITELIST_FILE, "w", encoding="utf-8") as outfile:
-            json.dump(whitelist, outfile)
-            print("%s (id=%s) added to whitelist" % (username,id))
+    # info collected in logger: datetime - followers, following, f_ratio, unfollows
+    logger.warning("")
 
 if __name__ == '__main__':
 
@@ -241,6 +249,16 @@ if __name__ == '__main__':
                         help='add USERNAME to whitelist')
 
     args = parser.parse_args()
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.WARNING)
+    #TODO: if file_dir doesn't exist
+    file_dir = os.path.join(os.path.expanduser("~"), ".config/cuchillo")
+    logFile = os.path.join(file_dir,"cuchillo.log")
+    logging.basicConfig(filename=logFile,
+                            filemode='a',
+                            level=logging.WARNING,
+                            format='%(message)s')
 
     try:
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
