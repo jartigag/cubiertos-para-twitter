@@ -101,6 +101,9 @@ def main():
 	if args.keyword:
 		keywordList = args.keyword+'-'+datetime.now().strftime('%d%b%Hh')
 		targetList = api.create_list(keywordList,'private')
+	elif args.user:
+		userFlwrsList = args.user+'-'+datetime.now().strftime('%d%b%Hh')
+		targetList = api.create_list(userFlwrsList,'private')
 	else:
 		todayslist = 'cazo-'+datetime.now().strftime('%d%b%H:%M')
 		targetList = api.create_list(todayslist,'private')
@@ -134,28 +137,32 @@ def main():
 				stream.filter(track=[args.keyword])
 				targetUser = kwListener.targetUser
 			else:
-				randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
-				randFlwrUsername = api.get_user(randFlwr).screen_name
-				randFlwrCount = api.get_user(randFlwr).followers_count
+				if args.user:
+					#TODO: check if args.user is valid
+					randFlwrUsername = args.user
+				else:
+					randFlwr = api.followers_ids(screen_name=myUsername)[randrange(myCount)]
+					randFlwrUsername = api.get_user(randFlwr).screen_name
+				randFlwrCount = api.get_user(screen_name=randFlwrUsername).followers_count
 				randFlwrOfFlwr = api.followers_ids(screen_name=randFlwrUsername)[randrange(randFlwrCount)]
 				targetUser = api.get_user(randFlwrOfFlwr).screen_name
 
 			#print("(%i) [sleep %i, reqs left: %s flwrs, %s tweets]" % (n,t,api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'],api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining']))
-			
+
 			if targetUser==myUsername: continue
-			
+
 			n_tweets, l_ratio, n_followers, f_ratio = basics(api, targetUser)
 			print("    > checking basics params..")
 			if not checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 				print("    >> it doesn't match. let's pick another target")
 				continue
-			
+
 			n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, targetUser)
 			print("    > checking params over time..")
 			if not checkOverTime(tweets_day_avg, retweets_percent):
 				print("    >> it doesn't match. let's pick another target")
 				continue
-			
+
 			print("    >> \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day) matches required params!" % (targetUser,f_ratio,tweets_day_avg))
 			logger.warning("    >> %s (%.2f fwrs/fwng, %.2f tweets/day) matches required params!" % (targetUser,f_ratio,tweets_day_avg))
 			#TODO: in () print required params
@@ -166,7 +173,7 @@ def main():
 		except tweepy.error.RateLimitError as e:
 			#print('[!] %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
 			#print('[!] %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
-			
+
 			reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
 			current_time = time()
 			wait_time = reset_time - int(current_time)
@@ -226,6 +233,9 @@ if __name__ == '__main__':
 	parser.add_argument('-k', '--keyword',
 						help='target users by keyword')
 
+	parser.add_argument('-u', '--user', metavar="user",
+						help='target followers of user')
+
 	args = parser.parse_args()
 
 	logger = logging.getLogger()
@@ -239,6 +249,8 @@ if __name__ == '__main__':
 	else:
 		if args.keyword:
 			logFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d-%H:%M') + " - " + args.keyword + ".log"))
+		elif args.user:
+			logFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d-%H:%M') + " - " + args.user + ".log"))
 		else:
 			logFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d-%H:%M') + " - cazo.log"))
 		logger.addHandler(logFile)
