@@ -16,4 +16,4 @@ de un @username, extrae **métricas** generales, ratios y tops, *para después e
 ### **cazo**
 > “servir de la olla al plato”
 
-*(#wip) cada x minutos, **agrega** @username de fuentes{keywords,followersoffollowers} **a lista privada** si cumple parámetros*
+cada x minutos, **agrega** @username de fuentes{keyword,followersoffollowers} **a lista privada** si cumple parámetros
