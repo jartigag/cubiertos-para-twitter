@@ -4,13 +4,13 @@ He diseñado mi propia *cubertería* con el objetivo de **hacer que Twitter sea 
 
 ### instalación
 
-⚠ Primero actualiza el fichero *secrets.py* con tus claves API (obtenlas en https://apps.twitter.com/)
+⚠ Primero actualiza el fichero [`secrets.py`](https://github.com/jartigag/cubiertos-para-twitter/blob/master/secrets.py) con tus claves API (obtenlas en https://apps.twitter.com/)
 
 ```sh
 sudo pip3 install -r requirements.txt
 ```
 
-## **Tenedor**
+## [**`tenedor.py`**](https://github.com/jartigag/cubiertos-para-twitter/blob/master/tenedor.py)
 > “Comer bocado a bocado”
 
 De un @username, extrae **métricas** generales, ratios y tops, *para después enviar un **informe por md** (#wip)*  
@@ -38,7 +38,7 @@ optional arguments:
 
 <p align="center"><a href="https://asciinema.org/a/QTjDYRC4k4pp0ewyfLQlKTmfD" target="_blank"><img src="https://asciinema.org/a/QTjDYRC4k4pp0ewyfLQlKTmfD.png" width="50%"/></a></p>
 
-## **cuchillo**
+## [**`cuchillo.py`**](https://github.com/jartigag/cubiertos-para-twitter/blob/master/cuchillo.py)
 > “Separar la carne del hueso”
 
 **Unfollow** @username si no está en whitelist, no followback y ha estado activo/inactivo por n días
@@ -76,7 +76,7 @@ optional arguments:
 
 <p align="center"><a href="https://asciinema.org/a/IQFOlDY4RMWFdtuHWK4Pz4k7k" target="_blank"><img src="https://asciinema.org/a/IQFOlDY4RMWFdtuHWK4Pz4k7k.png" width="50%"/></a></a></p>
 
-### **cazo**
+## [**`cazo.py`**](https://github.com/jartigag/cubiertos-para-twitter/blob/master/cazo.py)
 > “Servir de la olla al plato”
 
 **Agrega** @username de fuentes{keyword,followersoffollowers} **a lista privada** si cumple parámetros
