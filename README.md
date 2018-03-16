@@ -2,6 +2,12 @@
 
 He diseñado mi propia *cubertería* con el objetivo de **hacer que Twitter sea más fácil de *digerir***.
 
+[post](https://jartigag.github.io/cubiertos-para-twitter) presentando la herramienta: https://jartigag.github.io/cubiertos-para-twitter
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jartigag/cubiertos-para-twitter/master/logo.png" width="60%">
+</p>
+
 ### instalación
 
 ⚠ Primero actualiza el fichero [`secrets.py`](https://github.com/jartigag/cubiertos-para-twitter/blob/master/secrets.py) con tus claves API (obtenlas en https://apps.twitter.com/)
