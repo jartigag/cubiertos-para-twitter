@@ -21,7 +21,6 @@
 
 #TODO: --human descriptive inform
 #TODO: send inform via dm
-#TODO: analyze groups (from .txt, -i from fwing, f, -e from flwrs, from lists), print stats (avg, distrib, most freq)
 
 from tqdm import tqdm
 import tweepy
@@ -178,9 +177,6 @@ def over_time(api, username, tweets_limit=500, likes_limit=500):
 
 def main():
     """ To run with python tenedor.py screen_name """
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
 
     print("___ getting @\033[1m%s\033[0m's data..." % args.name)
     logger.warning("___ getting %s's data..." % args.name)
@@ -286,18 +282,52 @@ if __name__ == '__main__':
     logger.setLevel(logging.WARNING) #TODO: INFO level?
     #TODO: if file_dir doesn't exist
     file_dir = os.path.join(os.path.expanduser("~"), "twanalizados")
-
-    if args.group:
-        group_dir = os.path.join(file_dir, args.group)
-        print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
-        userFile = logging.FileHandler(os.path.join(group_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
-    else:
-        userFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
-
-    logger.addHandler(userFile)
+    userFile = ""
 
     try:
-        main()
+
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        auth.set_access_token(access_token, access_token_secret)
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
+        #TODO: analyze groups (from .txt, from fwing, from flwrs, from lists). print stats (avg, distrib, most freq)
+        if args.name==".":
+
+            following = []
+            n = 0
+            myUsername = api.me().screen_name
+            print("[-] hi %s! getting your following.." % myUsername)
+            for page in tweepy.Cursor(api.friends_ids, screen_name=myUsername).pages():
+                following.extend(page)
+                if n==1:            print("-- you follow +5k. retreiving them in pages..")
+                if n>0:             print("-- [+] page " + str(n))
+                if len(page)==5000: n += 1
+            print("[_] " + str(len(following)) + " following")
+            if args.group:
+                file_dir = os.path.join(file_dir, args.group)
+            i = 1
+            for f in following:
+                args.name = api.get_user(f).screen_name
+                print("[\033[92m%i\033[0m]"%i)
+                print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
+                if userFile: logger.removeHandler(userFile)  # to avoid including previous logs in each userFile
+                userFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
+                logger.addHandler(userFile)
+                try:
+                    main()
+                except Exception as e:
+                    pass
+                i += 1
+            print("[_] " + str(len(following)) + " analyzed")
+
+        else:
+
+            if args.group:
+                file_dir = os.path.join(file_dir, args.group)
+                print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
+            userFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
+            logger.addHandler(userFile)
+            main()
+
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)
         logger.error("[!] twitter error: %s" % e)
