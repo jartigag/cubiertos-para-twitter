@@ -37,7 +37,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -264,9 +264,10 @@ def main():
     
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description=
-        ">>\"eat one mouthful at a time\" - tool for twitter, version %s by @jartigag" % __version__,
-                                     usage='%(prog)s <screen_name> [options]')
+    parser = argparse.ArgumentParser(
+        description= ">> \"eat one mouthful at a time\"\ntool for twitter, v%s by @jartigag" % __version__,
+        formatter_class=argparse.RawTextHelpFormatter,
+        usage='%(prog)s <screen_name> [options]')
     parser.add_argument('name', metavar="screen_name",
                         help='target screen_name')
     parser.add_argument('-g', '--group',
@@ -291,7 +292,6 @@ if __name__ == '__main__':
         api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
         #TODO: analyze groups (from .txt, from fwing, from flwrs, from lists). print stats (avg, distrib, most freq)
         if args.name==".":
-
             following = []
             n = 0
             myUsername = api.me().screen_name
@@ -306,6 +306,7 @@ if __name__ == '__main__':
                 file_dir = os.path.join(file_dir, args.group)
             i = 1
             for f in following:
+                retweets = 0
                 args.name = api.get_user(f).screen_name
                 print("[\033[92m%i\033[0m]"%i)
                 print("___ @%s added to group [\033[1m%s\033[0m]" % (args.name, args.group))
@@ -333,4 +334,4 @@ if __name__ == '__main__':
         logger.error("[!] twitter error: %s" % e)
     except Exception as e:
         print("[\033[91m!\033[0m] error: %s" % e)
-        logger.error("[!] twitter error: %s" % e)
+        logger.error("[!] error: %s" % e)

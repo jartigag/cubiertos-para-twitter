@@ -28,7 +28,7 @@ import logging
 
 __version__ = '0.1'
 
-from secrets5 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 	if args.tweets:
@@ -215,8 +215,9 @@ def main():
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description=
-		">>\"serve from pot to dish\" - tool for twitter, version %s by @jartigag" % __version__,
-									 usage='%(prog)s [arguments (+value: >value, -value: <value)]')
+		">> \"serve from pot to dish\"\ntool for twitter, v%s by @jartigag" % __version__,
+		formatter_class=argparse.RawTextHelpFormatter,
+		usage='%(prog)s [arguments (+value: >value, -value: <value)]')
 	parser.add_argument('-f', '--followers', type=int,
 						help='filter by number of followers')
 	parser.add_argument('-l', '--likes_tweets_ratio', type=float,
@@ -233,7 +234,7 @@ if __name__ == '__main__':
 	parser.add_argument('-k', '--keyword',
 						help='target users by keyword')
 
-	parser.add_argument('-u', '--user', metavar="user",
+	parser.add_argument('-u', '--user',
 						help='target followers of user')
 
 	args = parser.parse_args()

@@ -17,7 +17,9 @@
 # Install:
 # pip3 install tweepy
 
+#TODO: #1 - before unfollow, show bio & date-fragment last tweet
 #TODO: filter by params
+#TODO: monthly clean-up: check whitelist, list who you don't interact with
 
 import argparse
 import tweepy
@@ -29,7 +31,7 @@ import logging
 
 __version__ = '0.1'
 
-from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
 
 APP = "cuchillo"
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")
@@ -222,8 +224,9 @@ def activity(api, nonreciprocals):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=
-        ">>\"separate meat from bone\" - tool for twitter, version %s by @jartigag" % __version__,
-                                     usage='%(prog)s [options]')
+        ">> \"separate meat from bone\"\ntool for twitter, v%s by @jartigag" % __version__,
+        formatter_class=argparse.RawTextHelpFormatter,
+        usage='%(prog)s [options]')
     parser.add_argument('-c', '--confirmation', action='store_true',
                         help='ask for confirmation before each unfollow (otherwise, asked before massive unfollow after listing users)')
 
