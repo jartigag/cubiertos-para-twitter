@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @jartigag
 #
@@ -37,7 +37,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0

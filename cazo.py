@@ -28,7 +28,11 @@ import logging
 
 __version__ = '0.1'
 
-from secrets4 import consumer_key, consumer_secret, access_token, access_token_secret
+# WHAT'S NEW (v0.2):
+#
+# - -d, --last_date_tweet: filter by last date tweet
+
+from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
 
 def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 	if args.tweets:
@@ -57,12 +61,17 @@ def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 
 	return True
 
-def checkOverTime(tweets_day_avg, retweets_percent):
+def checkOverTime(tweets_day_avg, end_date, retweets_percent):
 	if args.tweets_day_average:
 		if args.tweets_day_average > 0:
 			if tweets_day_avg < args.tweets_day_average: return False
 		if args.tweets_day_average < 0:
 			if tweets_day_avg > -args.tweets_day_average: return False
+	if args.last_tweet_date:
+		if int(args.last_tweet_date) > 0:
+			if end_date < datetime.strptime(args.last_tweet_date, '%d%m%y'): return False
+		if int(args.last_tweet_date) < 0:
+			if end_date > datetime.strptime(args.last_tweet_date, '-%d%m%y'): return False
 	if args.retweets_percent:
 		if args.retweets_percent > 0:
 			if retweets_percent < args.retweets_percent: return False
@@ -108,7 +117,7 @@ def main():
 		todayslist = 'cazo-'+datetime.now().strftime('%d%b%H:%M')
 		targetList = api.create_list(todayslist,'private')
 
-	t = 10 # secs between reqs
+	t = 100 # secs between reqs
 	n = 0
 
 	print("[_] targeting users who match this params: ")
@@ -117,6 +126,9 @@ def main():
 			if type(vars(args)[arg])==int or type(vars(args)[arg])==float:
 				if vars(args)[arg]>=0: print(arg+':','>',vars(args)[arg])
 				else: print(arg+':','<',-vars(args)[arg])
+			elif arg=='last_tweet_date':
+				if arg.split()[0]=='-': print(arg+':','<',vars(args)[arg])
+				else: print(arg+':','>',vars(args)[arg])
 			else:
 				print(arg+':','"%s"' % vars(args)[arg])
 	logger.warning("[_] targeting users who match this params: ")
@@ -159,7 +171,7 @@ def main():
 
 			n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, targetUser)
 			print("    > checking params over time..")
-			if not checkOverTime(tweets_day_avg, retweets_percent):
+			if not checkOverTime(tweets_day_avg, end_date, retweets_percent):
 				print("    >> it doesn't match. let's pick another target")
 				continue
 
@@ -226,7 +238,9 @@ if __name__ == '__main__':
 						help='filter by followers/following ratio')
 	parser.add_argument('-t', '--tweets', type=int,
 						help='filter by number of tweets')
-	parser.add_argument('-d', '--tweets_day_average', type=float,
+	parser.add_argument('-d', '--last_tweet_date', metavar='ddmmyy',
+						help='filter by last tweet date. date format e.g.: 010170 (1st Jan 1970)')
+	parser.add_argument('-a', '--tweets_day_average', type=float,
 						help='filter by tweets/day average')
 	parser.add_argument('-p', '--retweets_percent', type=float,
 						help='filter by retweets percent')
