@@ -198,6 +198,9 @@ def activity(api, nonreciprocals):
                 print("    >> @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
                 results.append(f)
                 if args.confirmation:
+                    nofbuser = api.get_user(f)
+                    print("       %s (%s fwrs, %s tws). bio:\n\033[1m«\033[0m%s\033[1m»\033[0m" % (nofbuser.name,nofbuser.followers_count,nofbuser.statuses_count,nofbuser.description))
+                    print("       last tweet (on %s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (nofbuser.status.created_at,nofbuser.status.text))
                     if input( "    unfollow? (y/n) ") == "y":
                         api.destroy_friendship(f)
                         print("    unfollowed!")
