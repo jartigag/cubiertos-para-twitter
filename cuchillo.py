@@ -17,7 +17,6 @@
 # Install:
 # pip3 install tweepy
 
-#TODO: #1 - before unfollow, show bio & date-fragment last tweet
 #TODO: filter by params
 #TODO: monthly clean-up: check whitelist, list who you don't interact with
 
@@ -30,6 +29,10 @@ import os
 import logging
 
 __version__ = '0.1'
+
+# WHAT'S NEW (v0.2):
+#
+# - before unfollowing someone, show his info, bio and date/fragment of last tweet
 
 from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
 
@@ -181,7 +184,9 @@ def activity(api, nonreciprocals):
                 results.append(f)
             #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
                 if args.confirmation:
-                    #TODO: print more user info
+                    nofbuser = api.get_user(f)
+                    print("       %s (%s fwrs, %s tws). bio:\n\033[1m«\033[0m%s\033[1m»\033[0m" % (nofbuser.name,nofbuser.followers_count,nofbuser.statuses_count,nofbuser.description))
+                    print("       last tweet (on %s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (nofbuser.status.created_at,nofbuser.status.text))
                     if input( "    unfollow? (y/n) ") == "y":
                         api.destroy_friendship(f)
                         unfollowed.append(f)
@@ -276,5 +281,5 @@ if __name__ == '__main__':
             main(auth, api)
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)
-    except Exception as e:
-        print("[\033[91m!\033[0m] error: %s" % e)
+    #except Exception as e:
+    #    print("[\033[91m!\033[0m] error: %s" % e)
