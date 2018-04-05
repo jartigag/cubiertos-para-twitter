@@ -32,7 +32,14 @@ __version__ = '0.1'
 #
 # - -d, --last_date_tweet: filter by last date tweet
 
-from secrets2 import consumer_key, consumer_secret, access_token, access_token_secret
+import secrets1 #WIP: rotate secrets to avoid twitter api limit
+import secrets2
+import secrets3
+import secrets4
+import secrets5
+
+secrets = [secrets1,secrets2,secrets3,secrets4,secrets5]
+s = 0 # counter of the actual secret: secrets[i]
 
 def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
 	if args.tweets:
@@ -99,8 +106,9 @@ class KeywordListener(tweepy.StreamListener):
 		return True # don't kill the stream
 	
 def main():
-	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-	auth.set_access_token(access_token, access_token_secret)
+	global secrets,s
+	auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
+	auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
 	api = tweepy.API(auth, compression=True)
 	myUsername = api.me().screen_name
 	myCount = api.me().followers_count
@@ -117,20 +125,29 @@ def main():
 		todayslist = 'cazo-'+datetime.now().strftime('%d%b%H:%M')
 		targetList = api.create_list(todayslist,'private')
 
-	t = 100 # secs between reqs
+	t = 1 # secs between reqs
 	n = 0
 
 	print("[_] targeting users who match this params: ")
 	for arg in vars(args):
 		if vars(args)[arg] is not None:
 			if type(vars(args)[arg])==int or type(vars(args)[arg])==float:
-				if vars(args)[arg]>=0: print(arg+':','>',vars(args)[arg])
-				else: print(arg+':','<',-vars(args)[arg])
+				if vars(args)[arg]>=0:
+					print(arg+':','>',vars(args)[arg])
+					logger.warning(arg+':','>',vars(args)[arg])
+				else:
+					print(arg+':','<',-vars(args)[arg])
+					logger.warning(arg+':','<',-vars(args)[arg])
 			elif arg=='last_tweet_date':
-				if arg.split()[0]=='-': print(arg+':','<',vars(args)[arg])
-				else: print(arg+':','>',vars(args)[arg])
+				if arg.split()[0]=='-':
+					print(arg+':','<',vars(args)[arg])
+					logger.warning(arg+':','<',vars(args)[arg])
+				else:
+					print(arg+':','>',vars(args)[arg])
+					logger.warning(arg+':','>',vars(args)[arg])
 			else:
 				print(arg+':','"%s"' % vars(args)[arg])
+				logger.warning(arg+':','"%s"' % vars(args)[arg])
 	logger.warning("[_] targeting users who match this params: ")
 
 	if args.keyword:
@@ -186,20 +203,27 @@ def main():
 			#print('[!] %s /followers/list requests left' % api.rate_limit_status()['resources']['followers']['/followers/list']['remaining'])
 			#print('[!] %s /statuses/user_timeline left '% api.rate_limit_status()['resources']['statuses']['/statuses/user_timeline']['remaining'])
 
-			reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
+			#(no longer needed) reset_time = api.rate_limit_status()['resources']['followers']['/followers/list']['reset']
 			current_time = time()
-			wait_time = reset_time - int(current_time)
+			#wait_time = reset_time - int(current_time)
 
 			running_time = int(current_time - init_time)
-			print("[\033[91m#\033[0m] api limit reached! \033[1m%i\033[0m users analysed (running time: %i secs, pauses: %i secs). resuming in %i secs.." % (n,running_time,t,wait_time))
-			logger.warning("[#] api limit reached! %i users analysed (running time: %i secs, pauses: %i secs)." % (n,running_time,t))
+			print("[\033[91m#\033[0m] api limit reached! \033[1m%i\033[0m users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
+			#(no longer needed) resuming in %i secs.. % (wait_time)
+			logger.warning("[#] api limit reached! %i users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
 
-			#TODO: progressbar instead of this while
+			s+=1 if s<4 else 0 # rotate secrets[s]
+			auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
+			auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+			api = tweepy.API(auth, compression=True)
+
+			'''
 			while current_time<reset_time:
 				current_time = int(time())
 				wait_time = reset_time - current_time
 				sleep(60)
 				print("sleeping %i secs more.. (=%i minutes)" % (wait_time,wait_time/60))
+			'''
 
 			n=0
 			init_time = time()
@@ -211,7 +235,7 @@ def main():
 				print("[\033[91m!\033[0m] error: tenedor.py made too many requests.. give it a break ;).")
 				print("    %i users analysed (running time: %i secs, pauses: %i secs)." % (n,running_time,t))
 				logger.warning("[!] error: 429. %i users analysed (running time: %i secs, pauses: %i secs)." % (n,running_time,t))
-				sleep(900)
+				sleep(10) # sleep(900)
 			else:
 				print("[\033[91m!\033[0m] error: "+str(e))
 				logger.warning("[!] error: "+str(e))

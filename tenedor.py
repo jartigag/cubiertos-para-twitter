@@ -37,7 +37,28 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-from secrets1 import consumer_key, consumer_secret, access_token, access_token_secret
+import secrets1 #WIP: rotate secrets to avoid twitter api limit
+import secrets2
+import secrets3
+import secrets4
+import secrets5
+
+secrets = [secrets1,secrets2,secrets3,secrets4,secrets5]
+s = 2 # counter of the actual secret: secrets[i]
+
+try:
+
+    auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
+    auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+    api = tweepy.API(auth, compression=True)
+
+except tweepy.error.RateLimitError as e:
+        print("[\033[91m!\033[0m] api limit reached! %s" % e)
+
+        s+=1 if s<4 else 0 # rotate secrets[s]
+        auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
+        auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+        api = tweepy.API(auth, compression=True)
 
 # Here are globals used to store data - I know it's dirty, whatever
 start_date = 0
@@ -287,9 +308,9 @@ if __name__ == '__main__':
 
     try:
 
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        auth.set_access_token(access_token, access_token_secret)
-        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
+        auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
+        auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+        api = tweepy.API(auth, compression=True)
         #TODO: analyze groups (from .txt, from fwing, from flwrs, from lists). print stats (avg, distrib, most freq)
         if args.name==".":
             following = []
@@ -328,6 +349,14 @@ if __name__ == '__main__':
             userFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d') + "-" + args.name + ".txt"))
             logger.addHandler(userFile)
             main()
+
+    except tweepy.error.RateLimitError as e:
+        print("[\033[91m!\033[0m] api limit reached! %s" % e)
+
+        s+=1 if s<4 else 0 # rotate secrets[s]
+        auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
+        auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+        api = tweepy.API(auth, compression=True)
 
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)
