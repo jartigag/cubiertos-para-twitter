@@ -134,20 +134,20 @@ def main():
 			if type(vars(args)[arg])==int or type(vars(args)[arg])==float:
 				if vars(args)[arg]>=0:
 					print(arg+':','>',vars(args)[arg])
-					logger.warning(arg+':','>',vars(args)[arg])
+					logger.warning(arg+': > '+str(vars(args)[arg]))
 				else:
 					print(arg+':','<',-vars(args)[arg])
-					logger.warning(arg+':','<',-vars(args)[arg])
+					logger.warning(arg+': < '+str((-vars(args)[arg])))
 			elif arg=='last_tweet_date':
 				if arg.split()[0]=='-':
 					print(arg+':','<',vars(args)[arg])
-					logger.warning(arg+':','<',vars(args)[arg])
+					logger.warning(arg+': < '+str(vars(args)[arg]))
 				else:
 					print(arg+':','>',vars(args)[arg])
-					logger.warning(arg+':','>',vars(args)[arg])
+					logger.warning(arg+': > '+str(vars(args)[arg]))
 			else:
 				print(arg+':','"%s"' % vars(args)[arg])
-				logger.warning(arg+':','"%s"' % vars(args)[arg])
+				logger.warning(arg+': "%s"' % vars(args)[arg])
 	logger.warning("[_] targeting users who match this params: ")
 
 	if args.keyword:
@@ -212,7 +212,12 @@ def main():
 			#(no longer needed) resuming in %i secs.. % (wait_time)
 			logger.warning("[#] api limit reached! %i users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
 
-			s+=1 if s<4 else 0 # rotate secrets[s]
+			# rotate secrets[s]
+			if s<4:
+				s+=1
+			else:
+				s=0
+
 			auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
 			auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
 			api = tweepy.API(auth, compression=True)
