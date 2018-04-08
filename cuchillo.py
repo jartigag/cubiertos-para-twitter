@@ -19,6 +19,7 @@
 
 #TODO: filter by params
 #TODO: monthly clean-up: check whitelist, list who you don't interact with
+#      maybe twenedor will print 'in whitelist' (especially if you run it with '.' arg)
 
 import argparse
 import tweepy
