@@ -1,8 +1,0 @@
-# cd analysed-txts-dir; bash sort-by.txt
-echo " == sort by tweets/day ==";
-grep tweets/day -Hn * | sort -n -k5 | column;
-echo " == sort by fwrs/fwng ==";
-grep fwrs/fwng -Hn * | sort -n -k4 | column;
-echo " == sort by followers ==";
-grep followers -Hn * | sort -n -k4 | column;
-
