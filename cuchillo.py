@@ -187,7 +187,12 @@ def activity(api, nonreciprocals):
                 if args.confirmation:
                     nofbuser = api.get_user(f)
                     print("       %s (%s fwrs, %s tws). bio:\n\033[1m«\033[0m%s\033[1m»\033[0m" % (nofbuser.name,nofbuser.followers_count,nofbuser.statuses_count,nofbuser.description))
-                    print("       last tweet (on %s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (nofbuser.status.created_at,nofbuser.status.text))
+                    creation_moment = nofbuser.status.created_at.strftime("%Y-%m-%d %H:%M:%S").split(' ')
+                    creation_date = creation_moment[0].split('-')
+                    creation_day = '-'.join([creation_date[1],creation_date[2]])
+                    creation_time = creation_moment[1].split(':')
+                    creation_hour = ':'.join([creation_time[0],creation_time[1]])
+                    print("       last tweet (on %s-\033[1m%s\033[0m \033[1m%s\033[0m:%s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (creation_date[0],creation_day,creation_hour,creation_time[2],nofbuser.status.text))
                     if input( "    unfollow? (y/n) ") == "y":
                         api.destroy_friendship(f)
                         unfollowed.append(f)
