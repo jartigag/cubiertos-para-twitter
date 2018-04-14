@@ -76,9 +76,9 @@ def checkOverTime(tweets_day_avg, end_date, retweets_percent):
 			if tweets_day_avg > -args.tweets_day_average: return False
 	if args.last_tweet_date:
 		if int(args.last_tweet_date) > 0:
-			if end_date < datetime.strptime(args.last_tweet_date, '%d%m%y'): return False
+			if end_date < datetime.strptime(args.last_tweet_date, '%y%m%d'): return False
 		if int(args.last_tweet_date) < 0:
-			if end_date > datetime.strptime(args.last_tweet_date, '-%d%m%y'): return False
+			if end_date > datetime.strptime(args.last_tweet_date, '-%y%m%d'): return False
 	if args.retweets_percent:
 		if args.retweets_percent > 0:
 			if retweets_percent < args.retweets_percent: return False
@@ -267,8 +267,8 @@ if __name__ == '__main__':
 						help='filter by followers/following ratio')
 	parser.add_argument('-t', '--tweets', type=int,
 						help='filter by number of tweets')
-	parser.add_argument('-d', '--last_tweet_date', metavar='ddmmyy',
-						help='filter by last tweet date. date format e.g.: 010170 (1st Jan 1970)')
+	parser.add_argument('-d', '--last_tweet_date', metavar='yyddmm',
+						help='filter by last tweet date. date format e.g.: 700101 (1st Jan 1970)')
 	parser.add_argument('-a', '--tweets_day_average', type=float,
 						help='filter by tweets/day average')
 	parser.add_argument('-p', '--retweets_percent', type=float,
