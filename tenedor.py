@@ -30,34 +30,33 @@ from datetime import datetime
 import os
 import logging
 
-__version__ = '0.1'
+__version__ = '0.1' # working on v0.2
+
+# WHAT'S NEW (v0.2):
+#
+# + secrets array of any size
 
 try:
     from urllib.parse import urlparse
 except ImportError:
     from urlparse import urlparse
 
-import secrets1 #WIP: rotate secrets to avoid twitter api limit
-import secrets2
-import secrets3
-import secrets4
-import secrets5
+from secrets import secrets
 
-secrets = [secrets1,secrets2,secrets3,secrets4,secrets5]
-s = 2 # counter of the actual secret: secrets[i]
+s = 1 # counter of the actual secret: secrets[i]
 
 try:
 
-    auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
-    auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+    auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+    auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
     api = tweepy.API(auth, compression=True)
 
 except tweepy.error.RateLimitError as e:
         print("[\033[91m!\033[0m] api limit reached! %s" % e)
 
-        s+=1 if s<4 else 0 # rotate secrets[s]
-        auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
-        auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+        s+=1 if s < len(secrets)-1 else 0 # rotate secrets[s]
+        auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+        auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
         api = tweepy.API(auth, compression=True)
 
 # Here are globals used to store data - I know it's dirty, whatever
@@ -308,8 +307,8 @@ if __name__ == '__main__':
 
     try:
 
-        auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
-        auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+        auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+        auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
         api = tweepy.API(auth, compression=True)
         #TODO: analyze groups (from .txt, from fwing, from flwrs, from lists). print stats (avg, distrib, most freq)
         if args.name==".":
@@ -353,9 +352,9 @@ if __name__ == '__main__':
     except tweepy.error.RateLimitError as e:
         print("[\033[91m!\033[0m] api limit reached! %s" % e)
 
-        s+=1 if s<4 else 0 # rotate secrets[s]
-        auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
-        auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+        s+=1 if s < len(secrets)-1 else 0 # rotate secrets[s]
+        auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+        auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
         api = tweepy.API(auth, compression=True)
 
     except tweepy.error.TweepError as e:

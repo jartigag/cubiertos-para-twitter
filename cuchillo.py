@@ -29,7 +29,7 @@ from tenedor import basics, over_time
 import os
 import logging
 
-__version__ = '0.1'
+__version__ = '0.1' # working on v0.2
 
 # WHAT'S NEW (v0.2):
 #

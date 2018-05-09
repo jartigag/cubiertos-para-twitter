@@ -26,19 +26,15 @@ from tenedor import basics, over_time
 import os
 import logging
 
-__version__ = '0.1'
+__version__ = '0.1' # working on v0.2
 
 # WHAT'S NEW (v0.2):
 #
-# - -d, --last_date_tweet: filter by last date tweet
+# + -d, --last_date_tweet: filter by last date tweet
+# + secrets array of any size
 
-import secrets1 #WIP: rotate secrets to avoid twitter api limit
-import secrets2
-import secrets3
-import secrets4
-import secrets5
+from secrets import secrets
 
-secrets = [secrets1,secrets2,secrets3,secrets4,secrets5]
 s = 0 # counter of the actual secret: secrets[i]
 
 def checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
@@ -104,11 +100,11 @@ class KeywordListener(tweepy.StreamListener):
 	def on_timeout(self):
 		print("timeout on KeywordListener. retrying..")
 		return True # don't kill the stream
-	
+
 def main():
 	global secrets,s
-	auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
-	auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+	auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+	auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
 	api = tweepy.API(auth, compression=True)
 	myUsername = api.me().screen_name
 	myCount = api.me().followers_count
@@ -213,13 +209,13 @@ def main():
 			logger.warning("[#] api limit reached! %i users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
 
 			# rotate secrets[s]
-			if s<4:
+			if s < len(secrets)-1:
 				s+=1
 			else:
 				s=0
 
-			auth = tweepy.OAuthHandler(secrets[s].consumer_key, secrets[s].consumer_secret)
-			auth.set_access_token(secrets[s].access_token, secrets[s].access_token_secret)
+			auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+			auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
 			api = tweepy.API(auth, compression=True)
 
 			'''
