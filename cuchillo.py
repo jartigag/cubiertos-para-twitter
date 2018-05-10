@@ -35,7 +35,7 @@ __version__ = '0.1' # working on v0.2
 #
 # - before unfollowing someone, show his info, bio and date/fragment of last tweet
 
-from secrets3 import consumer_key, consumer_secret, access_token, access_token_secret
+from secrets import secrets
 
 APP = "cuchillo"
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")
@@ -283,8 +283,8 @@ if __name__ == '__main__':
                             format='%(message)s')
 
     try:
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        auth.set_access_token(access_token, access_token_secret)
+        auth = tweepy.OAuthHandler(secrets[0]['consumer_key'], secrets[0]['consumer_secret'])
+        auth.set_access_token(secrets[0]['access_token'], secrets[0]['access_token_secret'])
         api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
         if args.add_to_whitelist:
             whitelist(auth, api)
