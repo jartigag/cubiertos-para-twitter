@@ -263,7 +263,7 @@ if __name__ == '__main__':
 						help='filter by followers/following ratio')
 	parser.add_argument('-t', '--tweets', type=int,
 						help='filter by number of tweets')
-	parser.add_argument('-d', '--last_tweet_date', metavar='yyddmm',
+	parser.add_argument('-d', '--last_tweet_date', metavar='yymmdd',
 						help='filter by last tweet date. date format e.g.: 700101 (1st Jan 1970)')
 	parser.add_argument('-a', '--tweets_day_average', type=float,
 						help='filter by tweets/day average')
