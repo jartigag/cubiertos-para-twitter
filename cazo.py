@@ -17,6 +17,8 @@
 # Install:
 # pip3 install tweepy
 
+#TODO. last_date_tweet not working
+
 import tweepy
 import argparse
 from datetime import datetime
