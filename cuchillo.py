@@ -34,6 +34,7 @@ __version__ = '0.1' # working on v0.2
 # WHAT'S NEW (v0.2):
 #
 # - before unfollowing someone, show his info, bio and date/fragment of last tweet
+# - add to whitelist from "unfollow? (y/n/w[hitelist])"
 
 from secrets import secrets
 
@@ -100,8 +101,7 @@ def checkOverTime(tweets_day_avg, retweets_percent):
 
     return True
 
-def whitelist(auth, api):
-    username = args.add_to_whitelist
+def whitelist(auth, api, username):
     with open(WHITELIST_FILE, encoding="utf-8") as file:
         whitelist = json.load(file)
         id = api.get_user(screen_name=username).id
@@ -156,13 +156,13 @@ def main(auth, api):
     if len(nonreciprocals)==0:
         return
     else:
-        activity(api, nonreciprocals)
+        activity(api, nonreciprocals, auth)
 
     fratio_new = float(api.get_user(screen_name=myUsername).followers_count/api.get_user(screen_name=myUsername).friends_count)
     if fratio_new-fratio!=0:
         print(" >> your ratio fwrs/fwng has changed to: %.2f ( +\033[1m%.2f\033[0m)" % (fratio_new, fratio_new-fratio))
         logger.warning(" >> your ratio fwrs/fwng has changed to: %.2f ( +%.2f)" % (fratio_new, fratio_new-fratio))
-def activity(api, nonreciprocals):
+def activity(api, nonreciprocals, auth):
     # ACTIVITY filter:
     results = []
     asktounfollow = []
@@ -193,11 +193,14 @@ def activity(api, nonreciprocals):
                     creation_time = creation_moment[1].split(':')
                     creation_hour = ':'.join([creation_time[0],creation_time[1]])
                     print("       last tweet (on %s-\033[1m%s\033[0m \033[1m%s\033[0m:%s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (creation_date[0],creation_day,creation_hour,creation_time[2],nofbuser.status.text))
-                    if input( "    unfollow? (y/n) ") == "y":
+                    ans = input( "    unfollow? (y/n/w[hitelist]) ")
+                    if ans == "y":
                         api.destroy_friendship(f)
                         unfollowed.append(f)
+                    elif ans == "w":
+                        whitelist(auth, api, nofbuser.screen_name)
                 else:
-                    asktounfollow.append(f)
+                    asktounfollow.append(nofbuser)
 
         if args.inactive:
             if last_date_tweeted(api, f) + timedelta(days=ndays) < datetime.today():
@@ -212,10 +215,12 @@ def activity(api, nonreciprocals):
                     creation_time = creation_moment[1].split(':')
                     creation_hour = ':'.join([creation_time[0],creation_time[1]])
                     print("       last tweet (on %s-\033[1m%s\033[0m \033[1m%s\033[0m:%s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (creation_date[0],creation_day,creation_hour,creation_time[2],nofbuser.status.text))
-                    if input( "    unfollow? (y/n) ") == "y":
+                    ans = input( "    unfollow? (y/n/w[hitelist]) ")
+                    if ans == "y":
                         api.destroy_friendship(f)
-                        print("    unfollowed!")
                         unfollowed.append(f)
+                    elif ans == "w":
+                        whitelist(auth, api, nofbuser.screen_name)
                 else:
                     asktounfollow.append(f)
 
@@ -287,7 +292,7 @@ if __name__ == '__main__':
         auth.set_access_token(secrets[0]['access_token'], secrets[0]['access_token_secret'])
         api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
         if args.add_to_whitelist:
-            whitelist(auth, api)
+            whitelist(auth, api, args.add_to_whitelist)
             n_args = sum([1 for arg in vars(args).values() if arg])
             if n_args > 1:
                 print("[only -w USERNAME arg is considered, other %i args are nosense here]" % (n_args-1))
