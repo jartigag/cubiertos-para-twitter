@@ -19,7 +19,7 @@ sudo pip3 install -r requirements.txt
 ## [**`tenedor.py`**](https://github.com/jartigag/cubiertos-para-twitter/blob/master/tenedor.py)
 > “Comer bocado a bocado”
 
-De un @username, extrae **métricas** generales, ratios y tops, *para después enviar un **informe por md** (#wip)*  
+De un @username, extrae **métricas** generales, ratios y top hashtags, links, y usuarios con los que interactúa  
 (basado en [tweet_analyzer (x0rz)](https://github.com/x0rz/tweets_analyzer))
 
 ### uso
@@ -85,7 +85,7 @@ optional arguments:
 ## [**`cazo.py`**](https://github.com/jartigag/cubiertos-para-twitter/blob/master/cazo.py)
 > “Servir de la olla al plato”
 
-**Agrega** @username de fuentes{keyword,followersoffollowers} **a lista privada** si cumple parámetros
+**Agrega** @username de fuentes{keyword,user,followersOfFollowers} **a lista privada** si cumple parámetros
 
 ### uso
 
