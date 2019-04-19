@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @jartigag
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +14,13 @@
 #
 # Usage:
 # python3 tenedor.py <screen_name> [options]
+
+__author__ = '@jartigag'
+__version__ = '0.1' # working on v0.2
+
+# WHAT'S NEW (v0.2):
 #
-# Install:
-# pip3 install tweepy tqdm
+# + secrets array of any size
 
 #TODO: --human descriptive inform
 #TODO: send inform via dm
@@ -29,12 +32,6 @@ import collections
 from datetime import datetime
 import os
 import logging
-
-__version__ = '0.1' # working on v0.2
-
-# WHAT'S NEW (v0.2):
-#
-# + secrets array of any size
 
 try:
     from urllib.parse import urlparse
@@ -285,7 +282,7 @@ def main():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
-        description= ">> \"eat one mouthful at a time\"\ntool for twitter, v%s by @jartigag" % __version__,
+        description= ">> \"eat one mouthful at a time\"\ntool for twitter, v%s by %s" % (__version__,__author__),
         formatter_class=argparse.RawTextHelpFormatter,
         usage='%(prog)s <screen_name> [options]')
     parser.add_argument('name', metavar="screen_name",
@@ -301,8 +298,8 @@ if __name__ == '__main__':
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    if not os.path.exists("~/twanalizados"):
-        os.makedirs("~/twanalizados")
+    if not os.path.exists(os.path.join(os.path.expanduser("~"), "twanalizados")):
+        os.makedirs(os.path.join(os.path.expanduser("~"), "/twanalizados"))
     file_dir = os.path.join(os.path.expanduser("~"), "twanalizados")
     userFile = ""
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @jartigag
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,9 +12,14 @@
 #
 # Usage:
 # python3 cuchillo.py [options]
+
+__author__ = '@jartigag'
+__version__ = '0.1' # working on v0.2
+
+# WHAT'S NEW (v0.2):
 #
-# Install:
-# pip3 install tweepy
+# - before unfollowing someone, show his info, bio and date/fragment of last tweet
+# - add to whitelist from "unfollow? (y/n/w[hitelist])"
 
 #TODO: filter by params
 #TODO: monthly clean-up: check whitelist, list who you don't interact with
@@ -29,19 +33,9 @@ from tenedor import basics, over_time
 import os
 import logging
 
-__version__ = '0.1' # working on v0.2
-
-# WHAT'S NEW (v0.2):
-#
-# - before unfollowing someone, show his info, bio and date/fragment of last tweet
-# - add to whitelist from "unfollow? (y/n/w[hitelist])"
-
 from secrets import secrets
 
-APP = "cuchillo"
-CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config")
-CONFIG_APP_DIR = os.path.join(CONFIG_DIR, APP)
-WHITELIST_FILE = os.path.join(CONFIG_APP_DIR, "whitelist.json")
+WHITELIST_FILE = os.path.join(os.path.expanduser("~"), ".config/cuchillo/whitelist.json")
 
 def last_date_tweeted(api, id):
     global last_date
@@ -108,6 +102,7 @@ def whitelist(auth, api, username):
         whitelist.append(id)
         with open(WHITELIST_FILE, "w", encoding="utf-8") as outfile:
             json.dump(whitelist, outfile)
+            outfile.write("\n")
             print(" >> %s (id=%s) added to whitelist" % (username,id))
 
 def main(auth, api):
@@ -147,11 +142,9 @@ def main(auth, api):
         with open(WHITELIST_FILE, encoding="utf-8") as file:
             whitelist = json.load(file)
             if f not in whitelist: afterWL.append(f)
-    #print(str(len(afterWL)) + " in afterWL")
 
     # FOLLOWBACK filter:
     nonreciprocals = list(set(afterWL) - set(followers))
-    #print(str(len(afterFB)) + " in afterFB")
 
     if len(nonreciprocals)==0:
         return
@@ -248,7 +241,7 @@ def activity(api, nonreciprocals, auth):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=
-        ">> \"separate meat from bone\"\ntool for twitter, v%s by @jartigag" % __version__,
+        ">> \"separate meat from bone\"\ntool for twitter, v%s by %s" % (__version__,__author__),
         formatter_class=argparse.RawTextHelpFormatter,
         usage='%(prog)s [options]')
     parser.add_argument('-c', '--confirmation', action='store_true',
@@ -280,12 +273,18 @@ if __name__ == '__main__':
     logger = logging.getLogger()
     logger.setLevel(logging.WARNING)
     #TODO: if file_dir doesn't exist
-    file_dir = os.path.join(os.path.expanduser("~"), ".config/cuchillo")
+    if not os.path.exists(os.path.join(os.path.expanduser("~"), ".config/cuchillo")):
+        os.makedirs(os.path.join(os.path.expanduser("~"), ".config/cuchillo"))
+    file_dir = os.path.join(os.path.join(os.path.expanduser("~"), ".config/cuchillo"))
     logFile = os.path.join(file_dir,"cuchillo.log")
     logging.basicConfig(filename=logFile,
                             filemode='a',
                             level=logging.WARNING,
                             format='%(message)s')
+    if not os.path.isfile(WHITELIST_FILE):
+        with open(WHITELIST_FILE, "w", encoding="utf-8") as file:
+            json.dump([], file)
+            file.write("\n")
 
     try:
         auth = tweepy.OAuthHandler(secrets[0]['consumer_key'], secrets[0]['consumer_secret'])
