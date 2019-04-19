@@ -12,8 +12,12 @@ He diseñado mi propia *cubertería* con el objetivo de **hacer que Twitter sea 
 
 ⚠ Primero actualiza el fichero [`secrets.py`](https://github.com/jartigag/cubiertos-para-twitter/blob/master/secrets.py) con tus claves API (obtenlas en https://apps.twitter.com/)
 
+Además, es recomendable crear un [virtualenv](https://github.com/pypa/virtualenv) previamente, para aislar este entorno de tus distintos entornos de Python.
+
 ```sh
-sudo pip3 install -r requirements.txt
+$ virtualenv venv
+$ source venv/bin/activate
+(venv) $ pip3 install -r requirements.txt
 ```
 
 ## [**`tenedor.py`**](https://github.com/jartigag/cubiertos-para-twitter/blob/master/tenedor.py)

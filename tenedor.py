@@ -43,7 +43,7 @@ except ImportError:
 
 from secrets import secrets
 
-s = 1 # counter of the actual secret: secrets[i]
+s = 0 # counter of the actual secret: secrets[i]
 
 try:
 
@@ -151,7 +151,7 @@ def print_stats(dataset, top=5):
         for k in sorted_keys:
             print(("- \033[1m{:<%d}\033[0m {:>6} {:<4}" % max_len_key)
                   .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / suma) * 100)))
-            logger.warning(("- {:<%d} {:>6} {:<4}" % max_len_key)
+            logger.info(("- {:<%d} {:>6} {:<4}" % max_len_key)
                   .format(k, dataset[k], "(%d%%)" % ((float(dataset[k]) / suma) * 100)))
             i += 1
             if i >= top:
@@ -199,18 +199,18 @@ def main():
     """ To run with python tenedor.py screen_name """
 
     print("___ getting @\033[1m%s\033[0m's data..." % args.name)
-    logger.warning("___ getting %s's data..." % args.name)
+    logger.info("___ getting %s's data..." % args.name)
 
     n_tweets, l_ratio, n_followers, f_ratio = basics(api, args.name)
 
     print("[+] tweets         : \033[1m%s\033[0m" % n_tweets)
-    logger.warning("[+] tweets         : %s" % n_tweets)
+    logger.info("[+] tweets         : %s" % n_tweets)
     print("[+] likes/tw ratio : \033[1m%.2f\033[0m"% l_ratio)
-    logger.warning("[+] likes/tw ratio : %.2f"% l_ratio)
+    logger.info("[+] likes/tw ratio : %.2f"% l_ratio)
     print("[+] followers      : \033[1m%s\033[0m" % n_followers)
-    logger.warning("[+] followers      : %s" % n_followers)
+    logger.info("[+] followers      : %s" % n_followers)
     print("[+] fwrs/fwng ratio: \033[1m%.2f\033[0m"% f_ratio)
-    logger.warning("[+] fwrs/fwng ratio: %.2f"% f_ratio)
+    logger.info("[+] fwrs/fwng ratio: %.2f"% f_ratio)
 
     # Will retreive all Tweets from account (or max limit)
     if n_tweets < args.tweets:
@@ -233,7 +233,7 @@ def main():
 
     print("[+] %d tweets in  : \033[1m%d\033[0m days (from %s to %s)" %
         (num_tweets, (end_date - start_date).days, datetime.strftime(start_date, '%Y-%m-%d'), end_date))
-    logger.warning("[+] %d tweets in  : %d days (from %s to %s)" %
+    logger.info("[+] %d tweets in  : %d days (from %s to %s)" %
         (num_tweets, (end_date - start_date).days, datetime.strftime(start_date, '%Y-%m-%d'), end_date))
 
     print("                     = %d months" % ((end_date - start_date).days / 30))
@@ -241,16 +241,16 @@ def main():
     # Checking if we have enough data (considering it's good to have at least 30 days of data)
     if (end_date - start_date).days < 30 and (num_tweets < n_tweets):
          print("[*] %i tweets are not enough in this case, consider retrying (--limit)" % num_tweets)
-         logger.warning("[*] %i tweets are not enough in this case, consider retrying (--limit)" % num_tweets)
+         logger.info("[*] %i tweets are not enough in this case, consider retrying (--limit)" % num_tweets)
 
     if (end_date - start_date).days != 0:
         print("[+] on average     : \033[1m%.2f\033[0m tweets/day, \033[1m%.2f\033[0m %% RTs" %
          (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
-        logger.warning("[+] on average     : %.2f tweets/day, %.2f %% RTs" %
+        logger.info("[+] on average     : %.2f tweets/day, %.2f %% RTs" %
          (num_tweets / float((end_date - start_date).days), float(retweets) * 100 / num_tweets))
 
     print("[+] Top 10 hashtags")
-    logger.warning("[+] Top 10 hashtags")
+    logger.info("[+] Top 10 hashtags")
     print_stats(detected_hashtags, top=10)
 
     # Converting users id to screen_names
@@ -264,22 +264,22 @@ def main():
 
 
     print("[+] top 5 most retweeted users")
-    logger.warning("[+] top 5 most retweeted users")
+    logger.info("[+] top 5 most retweeted users")
     print_stats(retweeted_users_names, top=5)
 
     print("[+] top 5 most liked users")
-    logger.warning("[+] top 5 most liked users")
+    logger.info("[+] top 5 most liked users")
     print_stats(liked_users_names, top=5)
 
     mentioned_users_names = {}
     for k in mentioned_users.keys():
         mentioned_users_names[id_screen_names[k]] = mentioned_users[k]
     print("[+] top 5 most mentioned users")
-    logger.warning("[+] top 5 most mentioned users")
+    logger.info("[+] top 5 most mentioned users")
     print_stats(mentioned_users_names, top=5)
 
     print("[+] top 5 most linked domains (from URLs)")
-    logger.warning("[+] top 5 most linked domains (from URLs)")
+    logger.info("[+] top 5 most linked domains (from URLs)")
     print_stats(detected_domains, top=5)
     
 if __name__ == '__main__':
@@ -300,8 +300,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     logger = logging.getLogger()
-    logger.setLevel(logging.WARNING) #TODO: INFO level?
-    #TODO: if file_dir doesn't exist
+    logger.setLevel(logging.INFO)
+    if not os.path.exists("~/twanalizados"):
+        os.makedirs("~/twanalizados")
     file_dir = os.path.join(os.path.expanduser("~"), "twanalizados")
     userFile = ""
 
@@ -323,6 +324,8 @@ if __name__ == '__main__':
                 if len(page)==5000: n += 1
             print("[_] " + str(len(following)) + " following")
             if args.group:
+                if not os.path.exists("{}/{}".format(file_dir, args.group)):
+                        os.makedirs("{}/{}".format(file_dir, args.group))
                 file_dir = os.path.join(file_dir, args.group)
             i = 1
             for f in following:
