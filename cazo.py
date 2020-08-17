@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
 #
 # Usage:
 # python3 cazo.py
@@ -31,6 +21,7 @@ from random import randrange
 from tenedor import basics, over_time
 import os
 import logging
+import sys
 
 from secrets import secrets
 
@@ -102,13 +93,12 @@ class KeywordListener(tweepy.StreamListener):
 
 def main():
     global secrets,s
-    auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+    auth = tweepy.OAuthHandler(secrets[s]['api_key'], secrets[s]['api_secret_key'])
     auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
     api = tweepy.API(auth, compression=True)
     myUsername = api.me().screen_name
     myCount = api.me().followers_count
-    print("[-] hi %s! you have %i followers. let's start!" % (myUsername, myCount))
-    logger.warning("[-] hi %s! you have %i followers. let's start!" % (myUsername, myCount))
+    logger.critical("[-] hi %s! you have %i followers. let's start!" % (myUsername, myCount))
 
     if args.keyword:
         keywordList = args.keyword+'-'+datetime.now().strftime('%d%b%Hh')
@@ -120,41 +110,33 @@ def main():
         todayslist = 'cazo-'+datetime.now().strftime('%d%b%H:%M')
         targetList = api.create_list(todayslist,'private')
 
-    t = 1 # secs between reqs
+    t = 15 # secs between reqs
     n = 0
 
-    print("[_] targeting users who match this params: ")
+    logger.critical("[_] targeting users who match this params: ")
     for arg in vars(args):
         if vars(args)[arg] is not None:
             if type(vars(args)[arg])==int or type(vars(args)[arg])==float:
                 if vars(args)[arg]>=0:
-                    print(arg+':','>',vars(args)[arg])
-                    logger.warning(arg+': > '+str(vars(args)[arg]))
+                    logger.critical(arg+': > '+str(vars(args)[arg]))
                 else:
-                    print(arg+':','<',-vars(args)[arg])
-                    logger.warning(arg+': < '+str((-vars(args)[arg])))
+                    logger.critical(arg+': < '+str((-vars(args)[arg])))
             elif arg=='last_tweet_date':
                 if arg.split()[0]=='-':
-                    print(arg+':','<',vars(args)[arg])
-                    logger.warning(arg+': < '+str(vars(args)[arg]))
+                    logger.critical(arg+': < '+str(vars(args)[arg]))
                 else:
-                    print(arg+':','>',vars(args)[arg])
-                    logger.warning(arg+': > '+str(vars(args)[arg]))
+                    logger.critical(arg+': > '+str(vars(args)[arg]))
             else:
-                print(arg+':','"%s"' % vars(args)[arg])
-                logger.warning(arg+': "%s"' % vars(args)[arg])
-    logger.warning("[_] targeting users who match this params: ")
+                logger.critical(arg+': "%s"' % vars(args)[arg])
 
     if args.keyword:
-        print('[_] capturing "\033[1m%s\033[0m" on the fly..' % args.keyword)
-        logger.warning('[_] capturing "%s" on the fly..' % args.keyword)
+        logger.critical('[_] capturing "%s" on the fly..' % args.keyword)
 
     init_time = time()
 
     while True:
         try:
             n+=1
-            print("[%i]" % n)
             if args.keyword:
                 kwListener = KeywordListener()
                 stream = tweepy.streaming.Stream(auth, kwListener)
@@ -173,20 +155,21 @@ def main():
 
             if targetUser==myUsername: continue
 
+            logger.warning("[%i] %s" % (n, targetUser))
+
             n_tweets, l_ratio, n_followers, f_ratio = basics(api, targetUser)
-            print("    > checking basics params..")
+            logger.warning("    > checking basics params..")
             if not checkBasics(n_tweets, l_ratio, n_followers, f_ratio):
-                print("    >> it doesn't match. let's pick another target")
+                logger.critical("    >> %s doesn't match. let's pick another target" % (targetUser))
                 continue
 
             n_days, start_date, end_date, num_tweets, tweets_day_avg, retweets_percent = over_time(api, targetUser)
-            print("    > checking params over time..")
+            logger.warning("    > checking params over time..")
             if not checkOverTime(tweets_day_avg, end_date, retweets_percent):
-                print("    >> it doesn't match. let's pick another target")
+                logger.critical("    >> %s doesn't match. let's pick another target" % (targetUser))
                 continue
 
-            print("    >> \033[1m%s\033[0m (%.2f fwrs/fwng, %.2f tweets/day) matches required params!" % (targetUser,f_ratio,tweets_day_avg))
-            logger.warning("    >> %s (%.2f fwrs/fwng, %.2f tweets/day) matches required params!" % (targetUser,f_ratio,tweets_day_avg))
+            logger.critical("    >> %s (%.2f fwrs/fwng, %.2f tweets/day) matches required params!" % (targetUser,f_ratio,tweets_day_avg))
             #TODO: in () print required params
             api.add_list_member(list_id=targetList.id,owner_screen_name='@'+myUsername,id=targetUser)
 
@@ -197,8 +180,7 @@ def main():
             current_time = time()
             running_time = int(current_time - init_time)
 
-            print("[\033[91m#\033[0m] api limit reached! \033[1m%i\033[0m users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
-            logger.warning("[#] api limit reached! %i users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
+            logger.error("[#] api limit reached! %i users analysed (running time: %i secs, pauses: %i secs, secrets%i)." % (n,running_time,t,s))
 
             # rotate secrets[s]
             if s < len(secrets)-1:
@@ -206,7 +188,7 @@ def main():
             else:
                 s=0
 
-            auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+            auth = tweepy.OAuthHandler(secrets[s]['api_key'], secrets[s]['api_secret_key'])
             auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
             api = tweepy.API(auth, compression=True)
 
@@ -217,13 +199,11 @@ def main():
             running_time = int(time() - init_time)
 
             if e.args[0]=='Twitter error response: status code = 429':
-                print("[\033[91m!\033[0m] error: tenedor.py made too many requests.. give it a break ;).")
-                print("    %i users analysed (running time: %i secs, pauses: %i secs)." % (n,running_time,t))
-                logger.warning("[!] error: 429. %i users analysed (running time: %i secs, pauses: %i secs)." % (n,running_time,t))
+                logger.error("[\033[91m!\033[0m] error: tenedor.py made too many requests.. give it a break ;).")
+                logger.error("[!] error: 429. %i users analysed (running time: %i secs, pauses: %i secs)." % (n,running_time,t))
                 sleep(10) # sleep(900)
             else:
-                print("[\033[91m!\033[0m] error: "+str(e))
-                logger.warning("[!] error: "+str(e))
+                logger.error("[!] error: "+str(e))
             pass
 
         sleep(t)
@@ -263,7 +243,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     logger = logging.getLogger()
-    logger.setLevel(logging.WARNING)
     if not os.path.exists(os.path.join(os.path.expanduser("~"), ".config/cazo")):
         os.makedirs(os.path.join(os.path.expanduser("~"), ".config/cazo"))
     file_dir = os.path.join(os.path.join(os.path.expanduser("~"), ".config/cazo"))
@@ -278,5 +257,8 @@ if __name__ == '__main__':
             logFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d-%H:%M') + " - " + args.user + ".log"))
         else:
             logFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d-%H:%M') + " - cazo.log"))
+        logFile.setLevel(logging.CRITICAL)
+        logStderr = logging.StreamHandler(sys.stderr)
         logger.addHandler(logFile)
+        logger.addHandler(logStderr)
         main()
