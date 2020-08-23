@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Usage:
+# usage:
 # python3 cazo.py
 
 __author__ = '@jartigag'
@@ -12,6 +12,8 @@ __version__ = '0.1' # working on v0.2
 # + secrets array of any size
 
 #FIXME: last_date_tweet not working
+#TODO: --no-twitter-list
+#TODO: "x doesn't match (reason why it doesn't match)"
 
 import tweepy
 import argparse
@@ -243,9 +245,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     logger = logging.getLogger()
-    if not os.path.exists(os.path.join(os.path.expanduser("~"), ".config/cazo")):
-        os.makedirs(os.path.join(os.path.expanduser("~"), ".config/cazo"))
-    file_dir = os.path.join(os.path.join(os.path.expanduser("~"), ".config/cazo"))
+    file_dir = "/var/log/cazo" #FIXME: i think it's more suitable, but permission error.. i'll give it a thought
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
 
     if not any(vars(args).values()):
         print("[!] set some parameters to filter users!")
@@ -258,7 +260,9 @@ if __name__ == '__main__':
         else:
             logFile = logging.FileHandler(os.path.join(file_dir, datetime.now().strftime('%y%m%d-%H:%M') + " - cazo.log"))
         logFile.setLevel(logging.CRITICAL)
-        logStderr = logging.StreamHandler(sys.stderr)
         logger.addHandler(logFile)
+        formatLogFile = logging.Formatter('%(asctime)s %(message)s', datefmt='%y%m%d-%H:%M:%S')
+        logFile.setFormatter(formatLogFile)
+        logStderr = logging.StreamHandler(sys.stderr)
         logger.addHandler(logStderr)
         main()
