@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# Usage:
+# usage:
 # python3 cuchillo.py [options]
 
 __author__ = '@jartigag'
@@ -103,7 +93,7 @@ def whitelist(auth, api, username):
         with open(WHITELIST_FILE, "w", encoding="utf-8") as outfile:
             json.dump(whitelist, outfile)
             outfile.write("\n")
-            print(" >> %s (id=%s) added to whitelist" % (username,id))
+            print("       %s (id=%s) added to whitelist" % (username,id))
 
 def main(auth, api):
 
@@ -174,7 +164,8 @@ def activity(api, nonreciprocals, auth):
     for f in nonreciprocals:
         if args.active:
             if last_date_tweeted(api, f) + timedelta(days=ndays) > datetime.today():
-                print("    >> @\033[1m%s\033[0m has been %s." % (api.get_user(f).screen_name, active_or_inactive) )
+                screen_name = api.get_user(f).screen_name
+                print("\n    >> @\033[1m%s\033[0m has been %s." % (screen_name, active_or_inactive) )
                 results.append(f)
             #elif has_liked(api, f) < datetime.today() - timedelta(days=ndays): actives.append(f)
                 if args.confirmation:
@@ -186,12 +177,15 @@ def activity(api, nonreciprocals, auth):
                     creation_time = creation_moment[1].split(':')
                     creation_hour = ':'.join([creation_time[0],creation_time[1]])
                     print("       last tweet (on %s-\033[1m%s\033[0m \033[1m%s\033[0m:%s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (creation_date[0],creation_day,creation_hour,creation_time[2],nofbuser.status.text))
-                    ans = input( "    unfollow? (y/n/w[hitelist]) ")
+                    ans = input( "    unfollow? (y/N/w[hitelist]) ")
                     if ans == "y":
                         api.destroy_friendship(f)
                         unfollowed.append(f)
+                        print("       @%s has been unfollowed" % (screen_name))
                     elif ans == "w":
                         whitelist(auth, api, nofbuser.screen_name)
+                    else:
+                        print("       @%s hasn't been unfollowed" % (screen_name))
                 else:
                     asktounfollow.append(nofbuser)
 
@@ -271,8 +265,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     logger = logging.getLogger()
-    logger.setLevel(logging.WARNING)
-    #TODO: if file_dir doesn't exist
     if not os.path.exists(os.path.join(os.path.expanduser("~"), ".config/cuchillo")):
         os.makedirs(os.path.join(os.path.expanduser("~"), ".config/cuchillo"))
     file_dir = os.path.join(os.path.join(os.path.expanduser("~"), ".config/cuchillo"))
@@ -280,16 +272,16 @@ if __name__ == '__main__':
     logging.basicConfig(filename=logFile,
                             filemode='a',
                             level=logging.WARNING,
-                            format='%(message)s')
+                            format='%(asctime)s %(message)s', datefmt='%y%m%d-%H:%M:%S')
     if not os.path.isfile(WHITELIST_FILE):
         with open(WHITELIST_FILE, "w", encoding="utf-8") as file:
             json.dump([], file)
             file.write("\n")
 
     try:
-        auth = tweepy.OAuthHandler(secrets[0]['consumer_key'], secrets[0]['consumer_secret'])
+        auth = tweepy.OAuthHandler(secrets[0]['api_key'], secrets[0]['api_secret_key'])
         auth.set_access_token(secrets[0]['access_token'], secrets[0]['access_token_secret'])
-        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True) 
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True, compression=True)
         if args.add_to_whitelist:
             whitelist(auth, api, args.add_to_whitelist)
             n_args = sum([1 for arg in vars(args).values() if arg])
@@ -299,5 +291,5 @@ if __name__ == '__main__':
             main(auth, api)
     except tweepy.error.TweepError as e:
         print("[\033[91m!\033[0m] twitter error: %s" % e)
-    #except Exception as e:
-    #    print("[\033[91m!\033[0m] error: %s" % e)
+    except Exception as e:
+        print("[\033[91m!\033[0m] error: %s" % e)
