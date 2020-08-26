@@ -94,6 +94,7 @@ def whitelist(auth, api, username):
             json.dump(whitelist, outfile)
             outfile.write("\n")
             print("       %s (id=%s) added to whitelist" % (username,id))
+            logger.warning("       %s (id=%s) added to whitelist" % (username,id))
 
 def main(auth, api):
 
@@ -182,10 +183,12 @@ def activity(api, nonreciprocals, auth):
                         api.destroy_friendship(f)
                         unfollowed.append(f)
                         print("       @%s has been unfollowed" % (screen_name))
+                        logger.warning("       @%s has been unfollowed" % (screen_name))
                     elif ans == "w":
                         whitelist(auth, api, nofbuser.screen_name)
                     else:
                         print("       @%s hasn't been unfollowed" % (screen_name))
+                        logger.warning("       @%s hasn't been unfollowed" % (screen_name))
                 else:
                     asktounfollow.append(nofbuser)
 
@@ -204,10 +207,13 @@ def activity(api, nonreciprocals, auth):
                     print("       last tweet (on %s-\033[1m%s\033[0m \033[1m%s\033[0m:%s):\n\033[1m«\033[0m%s\033[1m»\033[0m\n" % (creation_date[0],creation_day,creation_hour,creation_time[2],nofbuser.status.text))
                     ans = input( "    unfollow? (y/n/w[hitelist]) ")
                     if ans == "y":
-                        api.destroy_friendship(f)
-                        unfollowed.append(f)
+                        print("       @%s has been unfollowed" % (screen_name))
+                        logger.warning("       @%s has been unfollowed" % (screen_name))
                     elif ans == "w":
                         whitelist(auth, api, nofbuser.screen_name)
+                    else:
+                        print("       @%s hasn't been unfollowed" % (screen_name))
+                        logger.warning("       @%s hasn't been unfollowed" % (screen_name))
                 else:
                     asktounfollow.append(f)
 
