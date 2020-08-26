@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
 #
 # based on tweets_analyzer by @x0rz
 #
-# Usage:
+# usage:
 # python3 tenedor.py <screen_name> [options]
 
 __author__ = '@jartigag'
@@ -44,7 +34,7 @@ s = 0 # counter of the actual secret: secrets[i]
 
 try:
 
-    auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+    auth = tweepy.OAuthHandler(secrets[s]['api_key'], secrets[s]['api_secret_key'])
     auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
     api = tweepy.API(auth, compression=True)
 
@@ -52,7 +42,7 @@ except tweepy.error.RateLimitError as e:
         print("[\033[91m!\033[0m] api limit reached! %s" % e)
 
         s+=1 if s < len(secrets)-1 else 0 # rotate secrets[s]
-        auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+        auth = tweepy.OAuthHandler(secrets[s]['api_key'], secrets[s]['api_secret_key'])
         auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
         api = tweepy.API(auth, compression=True)
 
@@ -305,7 +295,7 @@ if __name__ == '__main__':
 
     try:
 
-        auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+        auth = tweepy.OAuthHandler(secrets[s]['api_key'], secrets[s]['api_secret_key'])
         auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
         api = tweepy.API(auth, compression=True)
         #TODO: analyze groups (from .txt, from fwing, from flwrs, from lists). print stats (avg, distrib, most freq)
@@ -353,7 +343,7 @@ if __name__ == '__main__':
         print("[\033[91m!\033[0m] api limit reached! %s" % e)
 
         s+=1 if s < len(secrets)-1 else 0 # rotate secrets[s]
-        auth = tweepy.OAuthHandler(secrets[s]['consumer_key'], secrets[s]['consumer_secret'])
+        auth = tweepy.OAuthHandler(secrets[s]['api_key'], secrets[s]['api_secret_key'])
         auth.set_access_token(secrets[s]['access_token'], secrets[s]['access_token_secret'])
         api = tweepy.API(auth, compression=True)
 
